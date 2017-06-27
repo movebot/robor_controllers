@@ -1,0 +1,35 @@
+<library path="lib/librobor_controllers_gui">
+
+  <class name="Manual Controller"
+         type="robor_controllers::ManualControllerPanel"
+         base_class_type="rviz::Panel">
+    <description>
+      Manual Controller Panel
+    </description>
+  </class>
+
+  <class name="Feedback Controller"
+         type="robor_controllers::FeedbackControllerPanel"
+         base_class_type="rviz::Panel">
+    <description>
+      Feedback Controller Panel
+    </description>
+  </class>
+
+  <class name="Urakubo Controller"
+         type="robor_controllers::UrakuboControllerPanel"
+         base_class_type="rviz::Panel">
+    <description>
+      Urakubo Controller Panel
+    </description>
+  </class>
+
+  <class name="Potentials Controller"
+         type="robor_controllers::PotentialsControllerPanel"
+         base_class_type="rviz::Panel">
+    <description>
+      Potentials Controller Panel
+    </description>
+  </class>
+
+</library>

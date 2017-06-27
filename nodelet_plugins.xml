@@ -1,0 +1,35 @@
+<library path="lib/librobor_controllers_nodelets">
+
+  <class name="robor_controllers/ManualController"
+         type="robor_controllers::ManualControllerNodelet"
+         base_class_type="nodelet::Nodelet">
+    <description>
+      Manual Controller Nodelet
+    </description>
+  </class>
+
+  <class name="robor_controllers/FeedbackController"
+         type="robor_controllers::FeedbackControllerNodelet"
+         base_class_type="nodelet::Nodelet">
+    <description>
+      Feedback Controller Nodelet
+    </description>
+  </class>
+
+  <class name="robor_controllers/UrakuboController"
+         type="robor_controllers::UrakuboControllerNodelet"
+         base_class_type="nodelet::Nodelet">
+    <description>
+      Urakubo Controller Nodelet
+    </description>
+  </class>
+
+  <class name="robor_controllers/PotentialsController"
+         type="robor_controllers::PotentialsControllerNodelet"
+         base_class_type="nodelet::Nodelet">
+    <description>
+      Potentials Controller Nodelet
+    </description>
+  </class>
+
+</library>
