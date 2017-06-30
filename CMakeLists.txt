@@ -8,7 +8,7 @@ find_package(Armadillo REQUIRED)
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES manual_controller feedback_controller potentials_controller #urakubo_controller 
+  LIBRARIES manual_controller feedback_controller potentials_controller urakubo_controller
   CATKIN_DEPENDS tf roscpp nodelet rviz joy std_srvs nav_msgs geometry_msgs obstacle_detector
 )
 
@@ -25,9 +25,9 @@ add_library(feedback_controller src/feedback_controller.cpp)
 target_link_libraries(feedback_controller ${roscpp_LIBRARIES})
 add_dependencies(feedback_controller ${catkin_EXPORTED_TARGETS})
 
-#add_library(urakubo_controller src/urakubo_controller.cpp)
-#target_link_libraries(urakubo_controller ${roscpp_LIBRARIES} ${ARMADILLO_LIBRARIES})
-#add_dependencies(urakubo_controller ${catkin_EXPORTED_TARGETS})
+add_library(urakubo_controller src/urakubo_controller.cpp)
+target_link_libraries(urakubo_controller ${roscpp_LIBRARIES} ${ARMADILLO_LIBRARIES})
+add_dependencies(urakubo_controller ${catkin_EXPORTED_TARGETS})
 
 add_library(potentials_controller src/potentials_controller.cpp)
 target_link_libraries(potentials_controller ${roscpp_LIBRARIES} ${ARMADILLO_LIBRARIES})
@@ -42,8 +42,8 @@ target_link_libraries(manual_controller_node manual_controller)
 add_executable(feedback_controller_node src/nodes/feedback_controller_node.cpp)
 target_link_libraries(feedback_controller_node feedback_controller)
 
-#add_executable(urakubo_controller_node src/nodes/urakubo_controller_node.cpp)
-#target_link_libraries(urakubo_controller_node urakubo_controller)
+add_executable(urakubo_controller_node src/nodes/urakubo_controller_node.cpp)
+target_link_libraries(urakubo_controller_node urakubo_controller)
 
 add_executable(potentials_controller_node src/nodes/potentials_controller_node.cpp)
 target_link_libraries(potentials_controller_node potentials_controller)
@@ -54,9 +54,9 @@ target_link_libraries(potentials_controller_node potentials_controller)
 add_library(${PROJECT_NAME}_nodelets
   src/nodelets/manual_controller_nodelet.cpp
   src/nodelets/feedback_controller_nodelet.cpp
-  #src/nodelets/urakubo_controller_nodelet.cpp
+  src/nodelets/urakubo_controller_nodelet.cpp
   src/nodelets/potentials_controller_nodelet.cpp)
-target_link_libraries(${PROJECT_NAME}_nodelets manual_controller feedback_controller potentials_controller) #urakubo_controller 
+target_link_libraries(${PROJECT_NAME}_nodelets manual_controller feedback_controller potentials_controller urakubo_controller)
 
 #
 # Build rviz plugins
@@ -78,7 +78,7 @@ add_definitions(-DQT_NO_KEYWORDS)
 add_library(${PROJECT_NAME}_gui
   src/panels/manual_controller_panel.cpp include/${PROJECT_NAME}/panels/manual_controller_panel.h
   src/panels/feedback_controller_panel.cpp include/${PROJECT_NAME}/panels/feedback_controller_panel.h
-  #src/panels/urakubo_controller_panel.cpp include/${PROJECT_NAME}/panels/urakubo_controller_panel.h
+  src/panels/urakubo_controller_panel.cpp include/${PROJECT_NAME}/panels/urakubo_controller_panel.h
   src/panels/potentials_controller_panel.cpp include/${PROJECT_NAME}/panels/potentials_controller_panel.h)
 target_link_libraries(${PROJECT_NAME}_gui ${roscpp_LIBRARIES} ${QT_LIBRARIES})
 add_dependencies(${PROJECT_NAME}_gui ${catkin_EXPORTED_TARGETS})
@@ -86,7 +86,7 @@ add_dependencies(${PROJECT_NAME}_gui ${catkin_EXPORTED_TARGETS})
 #
 # Install libraries
 #
-install(TARGETS manual_controller feedback_controller potentials_controller ${PROJECT_NAME}_nodelets ${PROJECT_NAME}_gui #urakubo_controller
+install(TARGETS manual_controller feedback_controller potentials_controller urakubo_controller ${PROJECT_NAME}_nodelets ${PROJECT_NAME}_gui
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_GLOBAL_BIN_DESTINATION})
@@ -94,7 +94,7 @@ install(TARGETS manual_controller feedback_controller potentials_controller ${PR
 #
 # Install nodes
 #
-install(TARGETS manual_controller_node feedback_controller_node potentials_controller_node #urakubo_controller_node
+install(TARGETS manual_controller_node feedback_controller_node potentials_controller_node urakubo_controller_node
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
 
 #

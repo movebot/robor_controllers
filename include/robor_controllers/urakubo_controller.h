@@ -38,6 +38,7 @@
 #include <armadillo>
 
 #include <ros/ros.h>
+#include <tf/tf.h>
 #include <std_srvs/Empty.h>
 #include <std_msgs/Float64.h>
 #include <nav_msgs/Odometry.h>
