@@ -224,7 +224,8 @@ void UrakuboController::computeControls() {
     //ROS_INFO_STREAM("Potential: " << V() << ", GradNorm: " << norm(graadV));
 
     if (p_normalize_gradient_)
-      u = -(p_a_ * I + b * J) * trans(B) * graadV * (norm(pose) + p_epsilon_e_) / (norm(trans(B) * graadV) + p_epsilon_d_);
+      u = -(p_a_ * I + b * J) * trans(B) * graadV / norm(graadV);
+      //u = -(p_a_ * I + b * J) * trans(B) * graadV * (norm(pose) + p_epsilon_e_) / (norm(trans(B) * graadV) + p_epsilon_d_);
     else
       u = -(p_a_ * I + b * J) * trans(B) * graadV;
 
