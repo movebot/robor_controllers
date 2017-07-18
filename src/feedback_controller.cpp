@@ -47,8 +47,8 @@ FeedbackController::FeedbackController(ros::NodeHandle& nh, ros::NodeHandle& nh_
   initialize();
 
   // Initialize unit quaternions to be valid
-  odom_.pose.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
-  ref_odom_.pose.pose.orientation = tf::createQuaternionMsgFromYaw(0.0);
+  odom_.pose.pose.orientation.w = 1.0;
+  ref_odom_.pose.pose.orientation.w = 1.0;
 }
 
 bool FeedbackController::updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res) {

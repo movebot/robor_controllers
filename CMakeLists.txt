@@ -119,4 +119,4 @@ install(DIRECTORY launch/
 # Create folders and copy resources
 #
 file(MAKE_DIRECTORY $ENV{HOME}/.local/share/icons/robor)
-file(COPY resources/play.png resources/pause.png resources/stop.png DESTINATION $ENV{HOME}/.local/share/icons/robor)
+file(COPY resources/icons/play.png resources/icons/pause.png resources/icons/stop.png DESTINATION $ENV{HOME}/.local/share/icons/robor)
