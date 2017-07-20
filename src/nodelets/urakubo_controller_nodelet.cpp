@@ -45,12 +45,19 @@ class UrakuboControllerNodelet : public nodelet::Nodelet
 {
 public:
   virtual void onInit() {
-    NODELET_INFO("Initializing Urakubo Controller Nodelet");
-
     ros::NodeHandle nh = getNodeHandle();
     ros::NodeHandle nh_local = getPrivateNodeHandle();
 
-    urakubo_controller_ = std::shared_ptr<UrakuboController>(new UrakuboController(nh, nh_local));
+    try {
+      NODELET_INFO("[Urakubo Controller]: Initializing nodelet");
+      urakubo_controller_ = std::shared_ptr<UrakuboController>(new UrakuboController(nh, nh_local));
+    }
+    catch (const char* s) {
+      NODELET_FATAL_STREAM("[Urakubo Controller]: " << s);
+    }
+    catch (...) {
+      NODELET_FATAL_STREAM("[Urakubo Controller]: Unexpected error");
+    }
   }
 
 private:

@@ -45,12 +45,19 @@ class ManualControllerNodelet : public nodelet::Nodelet
 {
 public:
   virtual void onInit() {
-    NODELET_INFO("Initializing Manual Controller Nodelet");
-
     ros::NodeHandle nh = getNodeHandle();
     ros::NodeHandle nh_local = getPrivateNodeHandle();
 
-    manual_controller_ = std::shared_ptr<ManualController>(new ManualController(nh, nh_local));
+    try {
+      NODELET_INFO("[Manual Controller]: Initializing nodelet");
+      manual_controller_ = std::shared_ptr<ManualController>(new ManualController(nh, nh_local));
+    }
+    catch (const char* s) {
+      NODELET_FATAL_STREAM("[Manual Controller]: " << s);
+    }
+    catch (...) {
+      NODELET_FATAL_STREAM("[Manual Controller]: Unexpected error");
+    }
   }
 
 private:

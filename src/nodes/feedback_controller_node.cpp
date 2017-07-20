@@ -41,9 +41,18 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "feedback_controller", ros::init_options::NoRosout);
   ros::NodeHandle nh("");
   ros::NodeHandle nh_local("~");
-  FeedbackController fc(nh, nh_local);
 
-  ros::spin();
+  try {
+    ROS_INFO("[Feedback Controller]: Initializing node");
+    FeedbackController fc(nh, nh_local);
+    ros::spin();
+  }
+  catch (const char* s) {
+    ROS_FATAL_STREAM("[Feedback Controller]: " << s);
+  }
+  catch (...) {
+    ROS_FATAL_STREAM("[Feedback Controller]: Unexpected error");
+  }
 
   return 0;
 }

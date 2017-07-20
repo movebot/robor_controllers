@@ -45,12 +45,19 @@ class FeedbackControllerNodelet : public nodelet::Nodelet
 {
 public:
   virtual void onInit() {
-    NODELET_INFO("Initializing Feedback Controller Nodelet");
-
     ros::NodeHandle nh = getNodeHandle();
     ros::NodeHandle nh_local = getPrivateNodeHandle();
 
-    feedback_controller_ = std::shared_ptr<FeedbackController>(new FeedbackController(nh, nh_local));
+    try {
+      NODELET_INFO("[Feedback Controller]: Initializing nodelet");
+      feedback_controller_ = std::shared_ptr<FeedbackController>(new FeedbackController(nh, nh_local));
+    }
+    catch (const char* s) {
+      NODELET_FATAL_STREAM("[Feedback Controller]: " << s);
+    }
+    catch (...) {
+      NODELET_FATAL_STREAM("[Feedback Controller]: Unexpected error");
+    }
   }
 
 private:

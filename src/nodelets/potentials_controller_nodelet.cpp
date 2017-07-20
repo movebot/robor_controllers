@@ -45,12 +45,19 @@ class PotentialsControllerNodelet : public nodelet::Nodelet
 {
 public:
   virtual void onInit() {
-    NODELET_INFO("Initializing Potentials Controller Nodelet");
-
     ros::NodeHandle nh = getNodeHandle();
     ros::NodeHandle nh_local = getPrivateNodeHandle();
 
-    potentials_controller_ = std::shared_ptr<PotentialsController>(new PotentialsController(nh, nh_local));
+    try {
+      NODELET_INFO("[Potentials Controller]: Initializing nodelet");
+      potentials_controller_ = std::shared_ptr<PotentialsController>(new PotentialsController(nh, nh_local));
+    }
+    catch (const char* s) {
+      NODELET_FATAL_STREAM("[Potentials Controller]: " << s);
+    }
+    catch (...) {
+      NODELET_FATAL_STREAM("[Potentials Controller]: Unexpected error");
+    }
   }
 
 private:

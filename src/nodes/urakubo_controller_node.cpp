@@ -41,9 +41,18 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "urakubo_controller", ros::init_options::NoRosout);
   ros::NodeHandle nh("");
   ros::NodeHandle nh_local("~");
-  UrakuboController uc(nh, nh_local);
 
-  ros::spin();
+  try {
+    ROS_INFO("[Urakubo Controller]: Initializing node");
+    UrakuboController uc(nh, nh_local);
+    ros::spin();
+  }
+  catch (const char* s) {
+    ROS_FATAL_STREAM("[Urakubo Controller]: " << s);
+  }
+  catch (...) {
+    ROS_FATAL_STREAM("[Urakubo Controller]: Unexpected error");
+  }
 
   return 0;
 }

@@ -41,9 +41,18 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "manual_controller", ros::init_options::NoRosout);
   ros::NodeHandle nh("");
   ros::NodeHandle nh_local("~");
-  ManualController mc(nh, nh_local);
 
-  ros::spin();
+  try {
+    ROS_INFO("[Manual Controller]: Initializing node");
+    ManualController mc(nh, nh_local);
+    ros::spin();
+  }
+  catch (const char* s) {
+    ROS_FATAL_STREAM("[Manual Controller]: " << s);
+  }
+  catch (...) {
+    ROS_FATAL_STREAM("[Manual Controller]: Unexpected error");
+  }
 
   return 0;
 }

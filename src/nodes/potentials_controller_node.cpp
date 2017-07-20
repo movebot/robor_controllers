@@ -41,9 +41,18 @@ int main(int argc, char** argv) {
   ros::init(argc, argv, "potentials_controller", ros::init_options::NoRosout);
   ros::NodeHandle nh("");
   ros::NodeHandle nh_local("~");
-  PotentialsController pc(nh, nh_local);
 
-  ros::spin();
+  try {
+    ROS_INFO("[Potentials Controller]: Initializing node");
+    PotentialsController pc(nh, nh_local);
+    ros::spin();
+  }
+  catch (const char* s) {
+    ROS_FATAL_STREAM("[Potentials Controller]: " << s);
+  }
+  catch (...) {
+    ROS_FATAL_STREAM("[Potentials Controller]: Unexpected error");
+  }
 
   return 0;
 }
