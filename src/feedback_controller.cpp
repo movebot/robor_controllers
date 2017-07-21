@@ -51,6 +51,22 @@ FeedbackController::FeedbackController(ros::NodeHandle& nh, ros::NodeHandle& nh_
   ref_odom_.pose.pose.orientation.w = 1.0;
 }
 
+FeedbackController::~FeedbackController() {
+  nh_local_.deleteParam("active");
+  nh_local_.deleteParam("run");
+  nh_local_.deleteParam("use_ff");
+
+  nh_local_.deleteParam("loop_rate");
+
+  nh_local_.deleteParam("gain_x");
+  nh_local_.deleteParam("gain_y");
+  nh_local_.deleteParam("gain_theta");
+
+  nh_local_.deleteParam("max_u");
+  nh_local_.deleteParam("max_v");
+  nh_local_.deleteParam("max_w");
+}
+
 bool FeedbackController::updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res) {
   bool prev_active = p_active_;
 

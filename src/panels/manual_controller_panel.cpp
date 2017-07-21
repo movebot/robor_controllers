@@ -183,15 +183,15 @@ void ManualControllerPanel::setParams() {
 }
 
 void ManualControllerPanel::getParams() {
-  nh_local_.param<bool>("active", p_active_, false);
-  nh_local_.param<bool>("publish_ref_vel", p_pub_ref_vel_, false);
+  p_active_ = nh_local_.param("active", false);
+  p_pub_ref_vel_ = nh_local_.param("publish_ref_vel", false);
 
-  nh_local_.param<bool>("use_joy", p_use_joy_, false);
-  nh_local_.param<bool>("use_keys", p_use_keys_, false);
+  p_use_joy_ = nh_local_.param("use_joy", false);
+  p_use_keys_ = nh_local_.param("use_keys", false);
 
-  nh_local_.param<double>("linear_gain", p_linear_gain_, 0.3);
-  nh_local_.param<double>("angular_gain", p_angular_gain_, 0.5);
-  nh_local_.param<double>("time_constant", p_time_constant_, 0.0);
+  p_linear_gain_ = nh_local_.param("linear_gain", 0.0);
+  p_angular_gain_ = nh_local_.param("angular_gain", 0.0);
+  p_time_constant_ = nh_local_.param("time_constant", 0.0);
 }
 
 void ManualControllerPanel::evaluateParams() {

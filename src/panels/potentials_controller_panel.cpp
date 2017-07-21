@@ -245,21 +245,21 @@ void PotentialsControllerPanel::setParams() {
 }
 
 void PotentialsControllerPanel::getParams() {
-  nh_local_.param<bool>("active", p_active_, false);
-  nh_local_.param<bool>("run", p_run_, false);
-  nh_local_.param<bool>("assisted_control", p_assisted_control_, false);
+  p_active_ = nh_local_.param("active", false);
+  p_run_ = nh_local_.param("run", false);
+  p_assisted_control_ = nh_local_.param("assisted_control", false);
 
-  nh_local_.param<double>("R", p_R_, 0.3);
-  nh_local_.param<double>("eta", p_eta_, 1.5);
-  nh_local_.param<double>("delta", p_delta_, 0.2);
+  p_R_ = nh_local_.param("R", 0.0);
+  p_eta_= nh_local_.param("eta", 0.0);
+  p_delta_ = nh_local_.param("delta", 0.0);
 
-  nh_local_.param<double>("gain_pose", p_gain_pose_, 0.5);
-  nh_local_.param<double>("gain_theta", p_gain_theta_, 0.5);
-  nh_local_.param<double>("gain_saddle", p_gain_saddle_, 0.2);
+  p_gain_pose_ = nh_local_.param("gain_pose", 0.0);
+  p_gain_theta_ = nh_local_.param("gain_theta", 0.0);
+  p_gain_saddle_ = nh_local_.param("gain_saddle", 0.0);
 
-  nh_local_.param<double>("max_u", p_max_u_, 0.4);
-  nh_local_.param<double>("max_v", p_max_v_, 0.4);
-  nh_local_.param<double>("max_w", p_max_w_, 2.5);
+  p_max_u_ = nh_local_.param("max_u", 0.0);
+  p_max_v_ = nh_local_.param("max_v", 0.0);
+  p_max_w_ = nh_local_.param("max_w", 0.0);
 }
 
 void PotentialsControllerPanel::evaluateParams() {

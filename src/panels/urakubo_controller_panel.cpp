@@ -181,15 +181,15 @@ void UrakuboControllerPanel::setParams() {
 }
 
 void UrakuboControllerPanel::getParams() {
-  nh_local_.param<bool>("active", p_active_, false);
-  nh_local_.param<bool>("run", p_run_, false);
+  p_active_ = nh_local_.param("active", false);
+  p_run_ = nh_local_.param("run", false);
 
-  nh_local_.param<double>("world_radius", world_radius_, 3.0);
-  nh_local_.param<double>("kappa", kappa_, 3.0);
-  nh_local_.param<double>("epsilon", epsilon_, 0.0001);
-  nh_local_.param<double>("k_w", k_w_, 0.1);
-  nh_local_.param<double>("b_", b_dash_, 2.5);
-  nh_local_.param<double>("a", a_, 0.5);
+  world_radius_ = nh_local_.param("world_radius", 0.0);
+  kappa_ = nh_local_.param("kappa", 0.0);
+  epsilon_ = nh_local_.param("epsilon", 0.0);
+  k_w_ = nh_local_.param("k_w", 0.0);
+  b_dash_ = nh_local_.param("b_", 0.0);
+  a_ = nh_local_.param("a", 0.0);
 }
 
 void UrakuboControllerPanel::evaluateParams() {

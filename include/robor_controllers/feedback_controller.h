@@ -37,6 +37,7 @@
 
 #include <ros/ros.h>
 #include <tf/tf.h>
+#include <tf/transform_listener.h>
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Twist.h>
 #include <std_srvs/Empty.h>
@@ -48,6 +49,7 @@ class FeedbackController
 {
 public:
   FeedbackController(ros::NodeHandle& nh, ros::NodeHandle& nh_local);
+  ~FeedbackController();
 
 private:
   bool updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);

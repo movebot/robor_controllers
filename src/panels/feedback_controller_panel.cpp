@@ -178,7 +178,7 @@ void FeedbackControllerPanel::verifyInputs() {
 void FeedbackControllerPanel::setParams() {
   nh_local_.setParam("active", p_active_);
   nh_local_.setParam("run", p_run_);
-  nh_local_.setParam("feedforward", p_ff_active_);
+  nh_local_.setParam("use_ff", p_ff_active_);
 
   nh_local_.setParam("gain_x", p_gain_x_);
   nh_local_.setParam("gain_y", p_gain_y_);
@@ -190,17 +190,17 @@ void FeedbackControllerPanel::setParams() {
 }
 
 void FeedbackControllerPanel::getParams() {
-  nh_local_.param<bool>("active", p_active_, false);
-  nh_local_.param<bool>("run", p_run_, false);
-  nh_local_.param<bool>("feedforward", p_ff_active_, true);
+  p_active_ = nh_local_.param("active", false);
+  p_run_ = nh_local_.param("run", false);
+  p_ff_active_ = nh_local_.param("use_ff", false);
 
-  nh_local_.param<double>("gain_x", p_gain_x_, 0.5);
-  nh_local_.param<double>("gain_y", p_gain_y_, 0.5);
-  nh_local_.param<double>("gain_theta", p_gain_theta_, 0.25);
+  p_gain_x_ = nh_local_.param("gain_x", 0.0);
+  p_gain_y_ = nh_local_.param("gain_y", 0.0);
+  p_gain_theta_ = nh_local_.param("gain_theta", 0.0);
 
-  nh_local_.param<double>("max_u", p_max_u_, 0.5);
-  nh_local_.param<double>("max_v", p_max_v_, 0.5);
-  nh_local_.param<double>("max_w", p_max_w_, 0.5);
+  p_max_u_ = nh_local_.param("max_u", 0.0);
+  p_max_v_ = nh_local_.param("max_v", 0.0);
+  p_max_w_ = nh_local_.param("max_w", 0.0);
 }
 
 void FeedbackControllerPanel::evaluateParams() {
