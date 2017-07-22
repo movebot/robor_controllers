@@ -37,7 +37,6 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/Joy.h>
-#include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Twist.h>
 #include <std_srvs/Empty.h>
 
@@ -48,6 +47,7 @@ class ManualController
 {
 public:
   ManualController(ros::NodeHandle& nh, ros::NodeHandle& nh_local);
+  ~ManualController();
 
 private:
   bool updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
@@ -62,18 +62,19 @@ private:
   ros::NodeHandle nh_local_;
 
   ros::ServiceServer params_srv_;
+
   ros::Timer timer_;
 
   ros::Subscriber joy_sub_;
   ros::Subscriber keys_sub_;
-  ros::Publisher controls_pub_;
-  ros::Publisher odom_pub_;
+
+  ros::Publisher twist_pub_;
   
-  geometry_msgs::Twist controls_;
+  geometry_msgs::Twist twist_;
 
   // Parameters
   bool p_active_;
-  bool p_pub_ref_vel_;
+  bool p_pub_referene_twist_;
 
   bool p_use_joy_;
   bool p_use_keys_;
@@ -85,8 +86,7 @@ private:
   double p_linear_gain_;
   double p_angular_gain_;
 
-  std::string p_parent_frame_id_;
-  std::string p_child_frame_id_;
+  std::string p_pub_topic_;
 };
 
 } // namespace robor_controllers

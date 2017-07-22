@@ -45,10 +45,6 @@ FeedbackController::FeedbackController(ros::NodeHandle& nh, ros::NodeHandle& nh_
   params_srv_ = nh_local_.advertiseService("params", &FeedbackController::updateParams, this);
 
   initialize();
-
-  // Initialize unit quaternions to be valid
-  odom_.pose.pose.orientation.w = 1.0;
-  ref_odom_.pose.pose.orientation.w = 1.0;
 }
 
 FeedbackController::~FeedbackController() {
@@ -65,6 +61,9 @@ FeedbackController::~FeedbackController() {
   nh_local_.deleteParam("max_u");
   nh_local_.deleteParam("max_v");
   nh_local_.deleteParam("max_w");
+
+  nh_local_.deleteParam("robot_frame_id");
+  nh_local_.deleteParam("reference_frame_id");
 }
 
 bool FeedbackController::updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res) {
@@ -85,28 +84,25 @@ bool FeedbackController::updateParams(std_srvs::Empty::Request& req, std_srvs::E
   nh_local_.param<double>("max_v", p_max_v_, 0.5);
   nh_local_.param<double>("max_w", p_max_w_, 3.0);
 
+  nh_local_.param<string>("robot_frame_id", p_robot_frame_id_, string("robot"));
+  nh_local_.param<string>("reference_frame_id", p_reference_frame_id_, string("reference"));
+
   timer_.setPeriod(ros::Duration(p_sampling_time_), false);
 
   if (p_active_ != prev_active) {
     if (p_active_) {
-      odom_sub_ = nh_.subscribe("robot_state", 5, &FeedbackController::odomCallback, this);
-      ref_odom_sub_ = nh_.subscribe("reference_state", 5, &FeedbackController::refOdomCallback, this);
+      reference_twist_sub_ = nh_.subscribe("reference_twist", 5, &FeedbackController::refTwistCallback, this);
       controls_pub_ = nh_.advertise<geometry_msgs::Twist>("controls", 5);
     }
     else {
-      geometry_msgs::TwistPtr controls_msg(new geometry_msgs::Twist);
-      controls_pub_.publish(controls_msg);
-
-      odom_sub_.shutdown();
-      ref_odom_sub_.shutdown();
+      sendZeroControls();
+      reference_twist_sub_.shutdown();
       controls_pub_.shutdown();
     }
   }
 
-  if (p_active_ && !p_run_) {
-    geometry_msgs::TwistPtr controls_msg(new geometry_msgs::Twist);
-    controls_pub_.publish(controls_msg);
-  }
+  if (p_active_ && !p_run_)
+    sendZeroControls();
 
   if (p_active_ && p_run_)
     timer_.start();
@@ -117,51 +113,30 @@ bool FeedbackController::updateParams(std_srvs::Empty::Request& req, std_srvs::E
 }
 
 void FeedbackController::timerCallback(const ros::TimerEvent& e) {
-  /*
-   * The following variables are described in the world coordinate system
-   */
-  double x = odom_.pose.pose.position.x;
-  double y = odom_.pose.pose.position.y;
-  double theta = tf::getYaw(odom_.pose.pose.orientation);
+  ros::Time now = ros::Time::now();
 
-  double v_x = odom_.twist.twist.linear.x;
-  double v_y = odom_.twist.twist.linear.y;
-  double w_z = odom_.twist.twist.angular.z;
+  tf::StampedTransform error_tf;
+  try {
+    tf_ls_.waitForTransform(p_robot_frame_id_, p_reference_frame_id_, now, ros::Duration(0.1));
+    tf_ls_.lookupTransform(p_robot_frame_id_, p_reference_frame_id_, now, error_tf);
+  }
+  catch (tf::TransformException ex) { sendZeroControls(); return; }
 
-  double x_r = ref_odom_.pose.pose.position.x;
-  double y_r = ref_odom_.pose.pose.position.y;
-  double theta_r = tf::getYaw(ref_odom_.pose.pose.orientation);
-
-  double v_x_r = ref_odom_.twist.twist.linear.x;
-  double v_y_r = ref_odom_.twist.twist.linear.y;
-  double w_z_r = ref_odom_.twist.twist.angular.z;
-
-  /*
-   * The control signals must be described in the base coordinate system
-   */
-  double u = 0.0; // Forward linear velocity
-  double v = 0.0; // Sideways linear velocity
-  double w = 0.0; // Angular velocity
-
-  double e_x = x_r - x;
-  double e_y = y_r - y;
-  double e_theta = theta_r - theta;
+  double e_x = error_tf.getOrigin().x();
+  double e_y = error_tf.getOrigin().y();
+  double e_theta = tf::getYaw(error_tf.getRotation());
 
   e_theta = atan2(sin(e_theta), cos(e_theta));
 
-  double x_p = p_gain_x_ * e_x;
-  double y_p = p_gain_y_ * e_y;
-  double theta_p = p_gain_theta_ * e_theta;
+  double u = p_gain_x_ * e_x; // Forward linear velocity
+  double v = p_gain_y_ * e_y; // Sideways linear velocity
+  double w = p_gain_theta_ * e_theta; // Angular velocity
 
   if (p_use_ff_) {
-    x_p += v_x_r;
-    y_p += v_y_r;
-    theta_p += w_z_r;
+    u += reference_twist_.linear.x * cos(e_theta);
+    v += reference_twist_.linear.y * sin(e_theta);
+    w += reference_twist_.angular.z;
   }
-
-  u =  x_p * cos(theta) + y_p * sin(theta);
-  v = -x_p * sin(theta) + y_p * cos(theta);
-  w = theta_p;
 
   scaleControls(u, v, w);
 
@@ -174,12 +149,8 @@ void FeedbackController::timerCallback(const ros::TimerEvent& e) {
   controls_pub_.publish(controls_msg);
 }
 
-void FeedbackController::odomCallback(const nav_msgs::Odometry::ConstPtr odom_msg) {
-  odom_ = *odom_msg;
-}
-
-void FeedbackController::refOdomCallback(const nav_msgs::Odometry::ConstPtr ref_odom_msg) {
-  ref_odom_ = *ref_odom_msg;
+void FeedbackController::refTwistCallback(const geometry_msgs::Twist::ConstPtr ref_twist_msg) {
+  reference_twist_ = *ref_twist_msg;
 }
 
 void FeedbackController::scaleControls(double& u, double& v, double& w) {

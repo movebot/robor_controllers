@@ -38,7 +38,6 @@
 #include <ros/ros.h>
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
-#include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Twist.h>
 #include <std_srvs/Empty.h>
 
@@ -54,26 +53,26 @@ public:
 private:
   bool updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
   void timerCallback(const ros::TimerEvent& e);
-
-  void odomCallback(const nav_msgs::Odometry::ConstPtr odom_msg);
-  void refOdomCallback(const nav_msgs::Odometry::ConstPtr ref_odom_msg);
+  void refTwistCallback(const geometry_msgs::Twist::ConstPtr reference_twist_msg);
 
   void initialize() { std_srvs::Empty empt; updateParams(empt.request, empt.response); }
-
   void scaleControls(double& u, double& v, double& w);
+  void sendZeroControls() { static geometry_msgs::Twist::ConstPtr zero_controls(new geometry_msgs::Twist); controls_pub_.publish(zero_controls); }
 
   ros::NodeHandle nh_;
   ros::NodeHandle nh_local_;
 
   ros::ServiceServer params_srv_;
+
   ros::Timer timer_;
 
-  ros::Subscriber odom_sub_;
-  ros::Subscriber ref_odom_sub_;
+  tf::TransformListener tf_ls_;
+
+  ros::Subscriber reference_twist_sub_;
+
   ros::Publisher controls_pub_;
 
-  nav_msgs::Odometry odom_;
-  nav_msgs::Odometry ref_odom_;
+  geometry_msgs::Twist reference_twist_;
 
   // Parameters
   bool p_active_;
@@ -90,6 +89,9 @@ private:
   double p_max_u_;
   double p_max_v_;
   double p_max_w_;
+
+  std::string p_robot_frame_id_;
+  std::string p_reference_frame_id_;
 };
 
 } // namespace robor_controllers

@@ -18,19 +18,19 @@ include_directories(include ${catkin_INCLUDE_DIRS} ${ARMADILLO_INCLUDE_DIRS})
 # Build libs
 #
 add_library(manual_controller src/manual_controller.cpp)
-target_link_libraries(manual_controller ${roscpp_LIBRARIES})
+target_link_libraries(manual_controller ${catkin_LIBRARIES})
 add_dependencies(manual_controller ${catkin_EXPORTED_TARGETS})
 
 add_library(feedback_controller src/feedback_controller.cpp)
-target_link_libraries(feedback_controller ${roscpp_LIBRARIES})
+target_link_libraries(feedback_controller ${catkin_LIBRARIES})
 add_dependencies(feedback_controller ${catkin_EXPORTED_TARGETS})
 
 add_library(urakubo_controller src/urakubo_controller.cpp)
-target_link_libraries(urakubo_controller ${roscpp_LIBRARIES} ${ARMADILLO_LIBRARIES})
+target_link_libraries(urakubo_controller ${catkin_LIBRARIES} ${ARMADILLO_LIBRARIES})
 add_dependencies(urakubo_controller ${catkin_EXPORTED_TARGETS})
 
 add_library(potentials_controller src/potentials_controller.cpp)
-target_link_libraries(potentials_controller ${roscpp_LIBRARIES} ${ARMADILLO_LIBRARIES})
+target_link_libraries(potentials_controller ${catkin_LIBRARIES} ${ARMADILLO_LIBRARIES})
 add_dependencies(potentials_controller ${catkin_EXPORTED_TARGETS})
 
 #

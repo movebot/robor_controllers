@@ -47,11 +47,27 @@ ManualController::ManualController(ros::NodeHandle& nh, ros::NodeHandle& nh_loca
   initialize();
 }
 
+ManualController::~ManualController() {
+  nh_local_.deleteParam("active");
+  nh_local_.deleteParam("publish_reference_twist");
+
+  nh_local_.deleteParam("use_joy");
+  nh_local_.deleteParam("use_keys");
+
+  nh_local_.deleteParam("loop_rate");
+  nh_local_.deleteParam("time_constant");
+
+  nh_local_.deleteParam("linear_gain");
+  nh_local_.deleteParam("angular_gain");
+}
+
 bool ManualController::updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res) {
   bool prev_active = p_active_;
 
   nh_local_.param<bool>("active", p_active_, false);
-  nh_local_.param<bool>("publish_ref_vel", p_pub_ref_vel_, false);
+  nh_local_.param<bool>("publish_reference_twist", p_pub_referene_twist_, false);
+
+  p_pub_topic_ = (p_pub_referene_twist_) ? (string("reference_twist")) : (string("controls"));
 
   nh_local_.param<bool>("use_joy", p_use_joy_, false);
   nh_local_.param<bool>("use_keys", p_use_keys_, false);
@@ -63,26 +79,21 @@ bool ManualController::updateParams(std_srvs::Empty::Request& req, std_srvs::Emp
   nh_local_.param<double>("linear_gain", p_linear_gain_, 0.3);
   nh_local_.param<double>("angular_gain", p_angular_gain_, 0.5);
 
-  nh_local_.param<string>("parent_frame_id", p_parent_frame_id_, "odom");
-  nh_local_.param<string>("child_frame_id", p_child_frame_id_, "reference");
-
   timer_.setPeriod(ros::Duration(p_sampling_time_), false);
 
   if (p_active_ != prev_active) {
     if (p_active_) {
       joy_sub_ = nh_.subscribe("joy", 5, &ManualController::joyCallback, this, ros::TransportHints().udp());
       keys_sub_ = nh_.subscribe("keys", 5, &ManualController::keysCallback, this, ros::TransportHints().udp());
-      controls_pub_ = nh_.advertise<geometry_msgs::Twist>("controls", 5);
-      odom_pub_ = nh_.advertise<nav_msgs::Odometry>("reference_state", 5);
+      twist_pub_ = nh_.advertise<geometry_msgs::Twist>(p_pub_topic_, 10);
     }
     else {
       geometry_msgs::TwistPtr controls_msg(new geometry_msgs::Twist);
-      controls_pub_.publish(controls_msg);
+      twist_pub_.publish(controls_msg);
 
       joy_sub_.shutdown();
       keys_sub_.shutdown();
-      controls_pub_.shutdown();
-      odom_pub_.shutdown();
+      twist_pub_.shutdown();
     }
   }
 
@@ -96,38 +107,26 @@ bool ManualController::updateParams(std_srvs::Empty::Request& req, std_srvs::Emp
 
 void ManualController::joyCallback(const sensor_msgs::Joy::ConstPtr joy_msg) {
   if (p_use_joy_) {
-    controls_.linear.x = p_linear_gain_ * joy_msg->axes[1];
-    controls_.linear.y = p_linear_gain_ * joy_msg->axes[0];
-    controls_.angular.z = p_angular_gain_ * joy_msg->axes[3];
+    twist_.linear.x = p_linear_gain_ * joy_msg->axes[1];
+    twist_.linear.y = p_linear_gain_ * joy_msg->axes[0];
+    twist_.angular.z = p_angular_gain_ * joy_msg->axes[3];
   }
 }
 
 void ManualController::keysCallback(const geometry_msgs::Twist::ConstPtr keys_msg) {
   if (p_use_keys_) {
-    controls_.linear.x = p_linear_gain_ * keys_msg->linear.x;
-    controls_.linear.y = p_linear_gain_ * keys_msg->linear.y;
-    controls_.angular.z = p_angular_gain_ * keys_msg->angular.z;
+    twist_.linear.x = p_linear_gain_ * keys_msg->linear.x;
+    twist_.linear.y = p_linear_gain_ * keys_msg->linear.y;
+    twist_.angular.z = p_angular_gain_ * keys_msg->angular.z;
   }
 }
 
 void ManualController::timerCallback(const ros::TimerEvent& e) {
-  static geometry_msgs::TwistPtr controls_msg(new geometry_msgs::Twist);
+  static geometry_msgs::TwistPtr twist_msg(new geometry_msgs::Twist);
 
-  controls_msg->linear.x  += p_sampling_time_ / (p_sampling_time_ + p_time_constant_) * (controls_.linear.x - controls_msg->linear.x);
-  controls_msg->linear.y  += p_sampling_time_ / (p_sampling_time_ + p_time_constant_) * (controls_.linear.y - controls_msg->linear.y);
-  controls_msg->angular.z += p_sampling_time_ / (p_sampling_time_ + p_time_constant_) * (controls_.angular.z - controls_msg->angular.z);
+  twist_msg->linear.x  += p_sampling_time_ / (p_sampling_time_ + p_time_constant_) * (twist_.linear.x - twist_msg->linear.x);
+  twist_msg->linear.y  += p_sampling_time_ / (p_sampling_time_ + p_time_constant_) * (twist_.linear.y - twist_msg->linear.y);
+  twist_msg->angular.z += p_sampling_time_ / (p_sampling_time_ + p_time_constant_) * (twist_.angular.z - twist_msg->angular.z);
 
-  nav_msgs::OdometryPtr odom_msg(new nav_msgs::Odometry);
-
-  odom_msg->header.stamp = ros::Time::now();
-  odom_msg->header.frame_id = p_parent_frame_id_;
-  odom_msg->child_frame_id = p_child_frame_id_;
-
-  odom_msg->pose.pose.orientation.w = 1.0;
-  odom_msg->twist.twist = *controls_msg;
-
-  if (p_pub_ref_vel_)
-    odom_pub_.publish(odom_msg);
-  else
-    controls_pub_.publish(controls_msg);
+  twist_pub_.publish(twist_msg);
 }
