@@ -149,8 +149,8 @@ void FeedbackController::timerCallback(const ros::TimerEvent& e) {
   controls_pub_.publish(controls_msg);
 }
 
-void FeedbackController::refTwistCallback(const geometry_msgs::Twist::ConstPtr ref_twist_msg) {
-  reference_twist_ = *ref_twist_msg;
+void FeedbackController::refTwistCallback(const geometry_msgs::Twist::ConstPtr reference_twist_msg) {
+  reference_twist_ = *reference_twist_msg;
 }
 
 void FeedbackController::scaleControls(double& u, double& v, double& w) {
