@@ -6,7 +6,7 @@ This package provides various motion controllers for the Robor project. All of t
 
 Manual controller subscribes to messages of type `sensor_msgs/Joy` from topic `joy` as well as messages of type `geometry_msgs/Twist` from topic `keys`. It converts these messages into appropriate control signals. The main loop starts when the node is activated and one or both sources of input messages are set to true. Additionally, the node provides a functionallity of a first-order, linear smoothing filter for the input signals.
 
-To run manual controller start node `manual_controller_node` or nodelet `robor_controllers/ManualController`. Use `Manual Controller` Rviz panel for convenient usage.
+To run manual controller start node `manual_controller_node` or nodelet `robor_controllers/ManualController`.
 
 ### Parameters:
 - `active` (`bool`, default: `true`) - active/sleep mode,
@@ -17,6 +17,16 @@ To run manual controller start node `manual_controller_node` or nodelet `robor_c
 - `time_constant` (`double`, defaul: `0.0`) - the time constant of a smoothing filter (in seconds),
 - `linear_gain` (`double`, default: `0.3`) - the gain of the controller for the control signals related to linear motion (in meters per second),
 - `angular_gain` (`double`, default: `0.5`) - the gain of the controller for the control signals related to rotation (in radians per second).
+
+Use `Manual Controller` Rviz panel for convenient usage.
+
+-----------------------
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/1482514/28524151-9eff60d2-707f-11e7-9e71-58d83edf46f3.png" alt="Rviz panel for the manual_controller node."/>
+  <br/>
+  Fig. 1. Rviz panel for the manual_controller node.
+</p>
+-----------------------
 
 ## The feedback_controller
 
