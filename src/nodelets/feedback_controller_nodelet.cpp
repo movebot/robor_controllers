@@ -60,6 +60,10 @@ public:
     }
   }
 
+  virtual ~FeedbackControllerNodelet() {
+    NODELET_INFO("[Feedback Controller]: Shutdown");
+  }
+
 private:
   std::shared_ptr<FeedbackController> feedback_controller_;
 };

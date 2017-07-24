@@ -60,6 +60,10 @@ public:
     }
   }
 
+  virtual ~UrakuboControllerNodelet() {
+    NODELET_INFO("[Urakubo Controller]: Shutdown");
+  }
+
 private:
   std::shared_ptr<UrakuboController> urakubo_controller_;
 };

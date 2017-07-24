@@ -60,6 +60,10 @@ public:
     }
   }
 
+  virtual ~ManualControllerNodelet() {
+    NODELET_INFO("[Manual Controller]: Shutdown");
+  }
+
 private:
   std::shared_ptr<ManualController> manual_controller_;
 };

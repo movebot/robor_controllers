@@ -60,6 +60,10 @@ public:
     }
   }
 
+  virtual ~PotentialsControllerNodelet() {
+    NODELET_INFO("[Potentials Controller]: Shutdown");
+  }
+
 private:
   std::shared_ptr<PotentialsController> potentials_controller_;
 };
