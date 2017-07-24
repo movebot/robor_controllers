@@ -42,7 +42,7 @@ FeedbackControllerPanel::FeedbackControllerPanel(QWidget* parent) : rviz::Panel(
   getParams();
 
   activate_checkbox_ = new QCheckBox("On/Off");
-  ff_checkbox_       = new QCheckBox("Feedforward");
+  ff_checkbox_       = new QCheckBox("Use feedforward");
   gain_x_input_      = new QLineEdit(QString::number(p_gain_x_));
   gain_y_input_      = new QLineEdit(QString::number(p_gain_y_));
   gain_theta_input_  = new QLineEdit(QString::number(p_gain_theta_));
@@ -153,7 +153,7 @@ void FeedbackControllerPanel::stop() {
 
 void FeedbackControllerPanel::verifyInputs() {
   p_active_ = activate_checkbox_->isChecked();
-  p_ff_active_ = ff_checkbox_->isChecked();
+  p_use_ff_ = ff_checkbox_->isChecked();
   p_run_ = p_run_ && p_active_;
 
   try { p_gain_x_ = boost::lexical_cast<double>(gain_x_input_->text().toStdString()); }
@@ -178,7 +178,7 @@ void FeedbackControllerPanel::verifyInputs() {
 void FeedbackControllerPanel::setParams() {
   nh_local_.setParam("active", p_active_);
   nh_local_.setParam("run", p_run_);
-  nh_local_.setParam("use_ff", p_ff_active_);
+  nh_local_.setParam("use_ff", p_use_ff_);
 
   nh_local_.setParam("gain_x", p_gain_x_);
   nh_local_.setParam("gain_y", p_gain_y_);
@@ -192,7 +192,7 @@ void FeedbackControllerPanel::setParams() {
 void FeedbackControllerPanel::getParams() {
   p_active_ = nh_local_.param("active", false);
   p_run_ = nh_local_.param("run", false);
-  p_ff_active_ = nh_local_.param("use_ff", false);
+  p_use_ff_ = nh_local_.param("use_ff", false);
 
   p_gain_x_ = nh_local_.param("gain_x", 0.0);
   p_gain_y_ = nh_local_.param("gain_y", 0.0);
@@ -216,7 +216,7 @@ void FeedbackControllerPanel::evaluateParams() {
   stop_button_->setChecked(!p_run_);
 
   ff_checkbox_->setEnabled(p_active_ && !p_run_);
-  ff_checkbox_->setChecked(p_ff_active_);
+  ff_checkbox_->setChecked(p_use_ff_);
 
   gain_x_input_->setEnabled(p_active_ && !p_run_);
   gain_y_input_->setEnabled(p_active_ && !p_run_);

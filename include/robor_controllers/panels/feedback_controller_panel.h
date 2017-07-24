@@ -96,7 +96,7 @@ private:
   // Parameters
   bool p_active_;
   bool p_run_;
-  bool p_ff_active_;
+  bool p_use_ff_;
 
   double p_gain_x_;
   double p_gain_y_;

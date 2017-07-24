@@ -69,7 +69,7 @@ FeedbackController::~FeedbackController() {
 bool FeedbackController::updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res) {
   bool prev_active = p_active_;
 
-  nh_local_.param<bool>("active", p_active_, false);
+  nh_local_.param<bool>("active", p_active_, true);
   nh_local_.param<bool>("run", p_run_, false);
   nh_local_.param<bool>("use_ff", p_use_ff_, true);
 

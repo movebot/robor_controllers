@@ -16,9 +16,8 @@
   </node>
 
   <node name="feedback_controller" pkg="robor_controllers" type="feedback_controller_node">
-    <param name="active"       value="false"/>
+    <param name="active"       value="true"/>
     <param name="run"          value="false"/>
-
     <param name="use_ff"       value="true"/>
 
     <param name="loop_rate"    value="100.0"/>
@@ -30,6 +29,9 @@
     <param name="max_u"        value="0.5"/>
     <param name="max_v"        value="0.5"/>
     <param name="max_w"        value="3.0"/>
+
+    <param name="robot_frame_id" value="robot"/>
+    <param name="reference_frame_id" value="reference"/>
   </node>
 
   <node name="potentials_controller" pkg="robor_controllers" type="potentials_controller_node">
