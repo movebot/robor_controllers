@@ -52,6 +52,10 @@
     <param name="max_u"        value="0.4"/>
     <param name="max_v"        value="0.4"/>
     <param name="max_w"        value="3.0"/>
+
+    <param name="fixed_frame_id"     value="map"/>
+    <param name="robot_frame_id"     value="robot"/>
+    <param name="reference_frame_id" value="reference"/>
   </node>
 
   <node name="urakubo_controller" pkg="robor_controllers" type="urakubo_controller_node">

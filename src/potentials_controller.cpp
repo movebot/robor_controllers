@@ -230,15 +230,17 @@ void PotentialsController::timerCallback(const ros::TimerEvent& e) {
   }
   catch (tf::TransformException ex) { sendZeroControls(); return; }
 
-  tf::StampedTransform reference_tf;
-  try {
-    tf_ls_.waitForTransform(p_fixed_frame_id_, p_reference_frame_id_, now, ros::Duration(0.1));
-    tf_ls_.lookupTransform(p_fixed_frame_id_, p_reference_frame_id_, now, reference_tf);
+  if (!p_assisted_control_) {
+    tf::StampedTransform reference_tf;
+    try {
+      tf_ls_.waitForTransform(p_fixed_frame_id_, p_reference_frame_id_, now, ros::Duration(0.1));
+      tf_ls_.lookupTransform(p_fixed_frame_id_, p_reference_frame_id_, now, reference_tf);
 
-    ref_pose_ = { reference_tf.getOrigin().x(), reference_tf.getOrigin().y() };
-    ref_theta_ = tf::getYaw(reference_tf.getRotation());
+      ref_pose_ = { reference_tf.getOrigin().x(), reference_tf.getOrigin().y() };
+      ref_theta_ = tf::getYaw(reference_tf.getRotation());
+    }
+    catch (tf::TransformException ex) { sendZeroControls(); return; }
   }
-  catch (tf::TransformException ex) { sendZeroControls(); return; }
 
   if (p_assisted_control_) {
     ref_pose_ = pose_;
