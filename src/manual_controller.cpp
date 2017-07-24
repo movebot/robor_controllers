@@ -64,10 +64,10 @@ ManualController::~ManualController() {
 bool ManualController::updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res) {
   bool prev_active = p_active_;
 
-  nh_local_.param<bool>("active", p_active_, false);
-  nh_local_.param<bool>("publish_reference_twist", p_pub_referene_twist_, false);
+  nh_local_.param<bool>("active", p_active_, true);
+  nh_local_.param<bool>("publish_reference_twist", p_pub_reference_twist_, false);
 
-  p_pub_topic_ = (p_pub_referene_twist_) ? (string("reference_twist")) : (string("controls"));
+  p_pub_topic_ = (p_pub_reference_twist_) ? (string("reference_twist")) : (string("controls"));
 
   nh_local_.param<bool>("use_joy", p_use_joy_, false);
   nh_local_.param<bool>("use_keys", p_use_keys_, false);
@@ -88,8 +88,8 @@ bool ManualController::updateParams(std_srvs::Empty::Request& req, std_srvs::Emp
       twist_pub_ = nh_.advertise<geometry_msgs::Twist>(p_pub_topic_, 10);
     }
     else {
-      geometry_msgs::TwistPtr controls_msg(new geometry_msgs::Twist);
-      twist_pub_.publish(controls_msg);
+      geometry_msgs::TwistPtr twist_msg(new geometry_msgs::Twist);
+      twist_pub_.publish(twist_msg);
 
       joy_sub_.shutdown();
       keys_sub_.shutdown();

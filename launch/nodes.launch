@@ -1,9 +1,9 @@
 <!-- -->
 <launch>
 
-  <node pkg="robor_controllers" type="manual_controller_node" name="manual_controller">
-    <param name="active"        value="false"/>
-    <param name="publish_ref_vel" value="false"/>
+  <node name="manual_controller" pkg="robor_controllers" type="manual_controller_node">
+    <param name="active"        value="true"/>
+    <param name="publish_reference_twist" value="false"/>
 
     <param name="use_keys"      value="false"/>
     <param name="use_joy"       value="false"/>
@@ -13,12 +13,9 @@
 
     <param name="linear_gain"   value="0.3"/>
     <param name="angular_gain"  value="0.5"/>
-
-    <param name="parent_frame_id" value="odom"/>
-    <param name="child_frame_id"  value="reference"/>
   </node>
 
-  <node pkg="robor_controllers" type="feedback_controller_node" name="feedback_controller">
+  <node name="feedback_controller" pkg="robor_controllers" type="feedback_controller_node">
     <param name="active"       value="false"/>
     <param name="run"          value="false"/>
 
@@ -34,8 +31,28 @@
     <param name="max_v"        value="0.5"/>
     <param name="max_w"        value="3.0"/>
   </node>
-<!--
-  <node pkg="robor_controllers" type="urakubo_controller_node" name="urakubo_controller">
+
+  <node name="potentials_controller" pkg="robor_controllers" type="potentials_controller_node">
+    <param name="active"       value="false"/>
+    <param name="run"          value="false"/>
+    <param name="assisted_control" value="false"/>
+
+    <param name="loop_rate"    value="100.0"/>
+
+    <param name="R"            value="0.5"/>
+    <param name="eta"          value="1.2"/>
+    <param name="delta"        value="0.2"/>
+    <param name="ko_velocity"  value="0.15"/>
+
+    <param name="gain_pose"    value="0.4"/>
+    <param name="gain_theta"   value="3.0"/>
+
+    <param name="max_u"        value="0.4"/>
+    <param name="max_v"        value="0.4"/>
+    <param name="max_w"        value="3.0"/>
+  </node>
+
+  <node name="urakubo_controller" pkg="robor_controllers" type="urakubo_controller_node">
     <param name="active"       value="false"/>
     <param name="run"          value="false"/>
 
@@ -60,26 +77,6 @@
     <param name="max_u"        value="0.4"/>
     <param name="max_v"        value="0.4"/>
     <param name="max_w"        value="2.7"/>
-  </node>
--->
-  <node pkg="robor_controllers" type="potentials_controller_node" name="potentials_controller">
-    <param name="active"       value="false"/>
-    <param name="run"          value="false"/>
-    <param name="assisted_control" value="false"/>
-
-    <param name="loop_rate"    value="100.0"/>
-
-    <param name="R"            value="0.5"/>
-    <param name="eta"          value="1.2"/>
-    <param name="delta"        value="0.2"/>
-    <param name="ko_velocity"  value="0.15"/>
-
-    <param name="gain_pose"    value="0.4"/>
-    <param name="gain_theta"   value="3.0"/>
-
-    <param name="max_u"        value="0.4"/>
-    <param name="max_v"        value="0.4"/>
-    <param name="max_w"        value="3.0"/>
   </node>
 
 </launch>

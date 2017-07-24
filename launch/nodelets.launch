@@ -3,24 +3,21 @@
 
   <arg name="manager" doc="Name of the nodelet manager"/>
 
-  <node pkg="nodelet" type="nodelet" name="manual_controller" args="load robor_controllers/ManualController $(arg manager)">
-    <param name="active"        value="false"/>
-    <param name="publish_ref_vel" value="false"/>
+  <node name="manual_controller" pkg="nodelet" type="nodelet" args="load robor_controllers/ManualController $(arg manager)">
+    <param name="active"        value="true"/>
+    <param name="publish_reference_twist" value="false"/>
 
     <param name="use_keys"      value="false"/>
     <param name="use_joy"       value="false"/>
 
     <param name="loop_rate"     value="100.0"/>
-    <param name="time_constant" value="0.1"/>
+    <param name="time_constant" value="0.0"/>
 
     <param name="linear_gain"   value="0.3"/>
     <param name="angular_gain"  value="0.5"/>
-
-    <param name="parent_frame_id" value="odom"/>
-    <param name="child_frame_id"  value="reference"/>
   </node>
 
-  <node pkg="nodelet" type="nodelet" name="feedback_controller" args="load robor_controllers/FeedbackController $(arg manager)">
+  <node name="feedback_controller" pkg="nodelet" type="nodelet" args="load robor_controllers/FeedbackController $(arg manager)">
     <param name="active"       value="false"/>
     <param name="run"          value="false"/>
 
@@ -36,8 +33,28 @@
     <param name="max_v"        value="0.5"/>
     <param name="max_w"        value="3.0"/>
   </node>
-<!--
-  <node pkg="nodelet" type="nodelet" name="urakubo_controller" args="load robor_controllers/UrakuboController $(arg manager)">
+
+  <node name="potentials_controller" pkg="nodelet" type="nodelet" args="load robor_controllers/PotentialsController $(arg manager)">
+    <param name="active"       value="false"/>
+    <param name="run"          value="false"/>
+    <param name="assisted_control" value="false"/>
+
+    <param name="loop_rate"    value="100.0"/>
+
+    <param name="R"            value="0.5"/>
+    <param name="eta"          value="1.2"/>
+    <param name="delta"        value="0.2"/>
+    <param name="ko_velocity"  value="0.15"/>
+
+    <param name="gain_pose"    value="0.4"/>
+    <param name="gain_theta"   value="3.0"/>
+
+    <param name="max_u"        value="0.4"/>
+    <param name="max_v"        value="0.4"/>
+    <param name="max_w"        value="3.0"/>
+  </node>
+
+  <node name="urakubo_controller" pkg="nodelet" type="nodelet" args="load robor_controllers/UrakuboController $(arg manager)">
     <param name="active"       value="false"/>
     <param name="run"          value="false"/>
 
@@ -62,26 +79,6 @@
     <param name="max_u"        value="0.4"/>
     <param name="max_v"        value="0.4"/>
     <param name="max_w"        value="2.7"/>
-  </node>
--->
-  <node pkg="nodelet" type="nodelet" name="potentials_controller" args="load robor_controllers/PotentialsController $(arg manager)">
-    <param name="active"       value="false"/>
-    <param name="run"          value="false"/>
-    <param name="assisted_control" value="false"/>
-
-    <param name="loop_rate"    value="100.0"/>
-
-    <param name="R"            value="0.5"/>
-    <param name="eta"          value="1.2"/>
-    <param name="delta"        value="0.2"/>
-    <param name="ko_velocity"  value="0.15"/>
-
-    <param name="gain_pose"    value="0.4"/>
-    <param name="gain_theta"   value="3.0"/>
-
-    <param name="max_u"        value="0.4"/>
-    <param name="max_v"        value="0.4"/>
-    <param name="max_w"        value="3.0"/>
   </node>
 
 </launch>

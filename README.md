@@ -9,16 +9,14 @@ Manual controller subscribes to messages of type `sensor_msgs/Joy` from topic `j
 To run manual controller start node `manual_controller_node` or nodelet `robor_controllers/ManualController`. Use `Manual Controller` Rviz panel for convenient usage.
 
 ### Parameters:
-- `active` (`bool`, default: `false`) - activates the node,
-- `publish_ref_vel` (`bool`, default: `false`) - if set to true, the node publishes messages of type `nav_msgs/Odometry` under topic `reference_state` instead of control signals (after checking setting this parameter to true the node must be restarted (deactivate-activate),
+- `active` (`bool`, default: `true`) - active/sleep mode,
+- `publish_reference_twist` (`bool`, default: `false`) - if set to true, the node publishes messages of type `geometry_msgs/Twist` under topic `reference_twist` instead of control signals (after setting this parameter to `true` the node must be restarted (deactivate-activate),
 - `use_joy` (`bool`, default: `false`) - use signals from joystick as input,
 - `use_keys` (`bool`, default: `false`) - use signals from keyboard as input,
-- `loop_rate` (`double`, default: `100.0`) - the rate of the main loop in hertz,
-- `time_constant` (`double`, defaul: `0.0`) - the time constant of a smoothing filter in seconds,
+- `loop_rate` (`double`, default: `100.0`) - the rate of the main loop (in hertz),
+- `time_constant` (`double`, defaul: `0.0`) - the time constant of a smoothing filter (in seconds),
 - `linear_gain` (`double`, default: `0.3`) - the gain of the controller for the control signals related to linear motion (in meters per second),
-- `angular_gain` (`double`, default: `0.5`) - the gain of the controller for the control signals related to rotation (in radians per second),
-- `parent_frame_id` (`string`, default: `odom`) - the parent frame id for the `reference_state` messages,
-- `child_frame_id` (`string`, default: `reference`) - the child frame id for the `reference_state` messages.
+- `angular_gain` (`double`, default: `0.5`) - the gain of the controller for the control signals related to rotation (in radians per second).
 
 ## The feedback_controller
 

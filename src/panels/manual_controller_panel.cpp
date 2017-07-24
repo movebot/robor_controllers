@@ -45,7 +45,7 @@ ManualControllerPanel::ManualControllerPanel(QWidget* parent) : rviz::Panel(pare
   std::fill_n(keys_, 6, 0);
 
   activate_checkbox_ = new QCheckBox("On/Off");
-  pub_ref_vel_checkbox_ = new QCheckBox("Publish reference velocity (need restart)");
+  pub_ref_vel_checkbox_ = new QCheckBox("Publish reference twist (need restart)");
 
   joy_button_        = new QPushButton("Joy");
   keys_button_       = new QPushButton("Keys");
@@ -155,7 +155,7 @@ void ManualControllerPanel::processInputs() {
 
 void ManualControllerPanel::verifyInputs() {
   p_active_ = activate_checkbox_->isChecked();
-  p_pub_ref_vel_ = pub_ref_vel_checkbox_->isChecked();
+  p_publish_reference_twist_ = pub_ref_vel_checkbox_->isChecked();
 
   p_use_joy_ = joy_button_->isChecked();
   p_use_keys_ = keys_button_->isChecked();
@@ -172,7 +172,7 @@ void ManualControllerPanel::verifyInputs() {
 
 void ManualControllerPanel::setParams() {
   nh_local_.setParam("active", p_active_);
-  nh_local_.setParam("publish_ref_vel", p_pub_ref_vel_);
+  nh_local_.setParam("publish_reference_twist", p_publish_reference_twist_);
 
   nh_local_.setParam("use_joy", p_use_joy_);
   nh_local_.setParam("use_keys", p_use_keys_);
@@ -184,7 +184,7 @@ void ManualControllerPanel::setParams() {
 
 void ManualControllerPanel::getParams() {
   p_active_ = nh_local_.param("active", false);
-  p_pub_ref_vel_ = nh_local_.param("publish_ref_vel", false);
+  p_publish_reference_twist_ = nh_local_.param("publish_reference_twist", false);
 
   p_use_joy_ = nh_local_.param("use_joy", false);
   p_use_keys_ = nh_local_.param("use_keys", false);
@@ -198,7 +198,7 @@ void ManualControllerPanel::evaluateParams() {
   activate_checkbox_->setChecked(p_active_);
 
   pub_ref_vel_checkbox_->setEnabled(p_active_);
-  pub_ref_vel_checkbox_->setChecked(p_pub_ref_vel_);
+  pub_ref_vel_checkbox_->setChecked(p_publish_reference_twist_);
 
   joy_button_->setEnabled(p_active_);
   joy_button_->setChecked(p_use_joy_);

@@ -107,7 +107,7 @@ private:
 
   // Parameters
   bool p_active_;
-  bool p_pub_ref_vel_;
+  bool p_publish_reference_twist_;
 
   bool p_use_joy_;
   bool p_use_keys_;
