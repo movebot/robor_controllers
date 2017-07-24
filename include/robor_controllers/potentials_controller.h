@@ -36,16 +36,18 @@
 #pragma once
 
 #include <armadillo>
-
 #include <boost/filesystem.hpp>
 
 #include <ros/ros.h>
 #include <tf/tf.h>
+#include <tf/transform_listener.h>
 #include <std_srvs/Empty.h>
 #include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Pose2D.h>
 #include <geometry_msgs/Twist.h>
 #include <obstacle_detector/Obstacles.h>
+
+#include "robor_controllers/obstacle.h"
 
 namespace robor_controllers
 {
@@ -57,67 +59,22 @@ inline double squared(double x) { return pow(x, 2.0); }
 inline double cubed(double x) { return pow(x, 3.0); }
 inline double quaded(double x) { return pow(x, 4.0); }
 
-
-class Obstacle {
-public:
-  Obstacle(arma::vec2 point, arma::vec2 vel, double r, double U_s, double U_d) :
-    center_(point), velocity_(vel), r_(r), U_s_(U_s), U_d_(U_d) {}
-
-  double rho(const arma::vec2& p) const;
-  arma::vec2 rhoGradient(const arma::vec2& p) const;
-  arma::mat22 rhoHessian(const arma::vec2& p) const;
-
-  double rawRepellingPotential(const double ro) const;
-  double rawRepellingPotential(const arma::vec2& p) const;
-  arma::vec2 rawRepellingGradient(const arma::vec2& p) const;
-  arma::mat22 rawRepellingHessian(const arma::vec2& p) const;
-
-  double warpDistance(const arma::vec2& warp_vec, const arma::vec2& p, double& range) const;
-  arma::vec2 warpDistanceGradient(const arma::vec2& warp_vec) const;
-  arma::mat22 warpDistanceHessian() const;
-
-  double warp(const double d, const double D) const;
-  double warp(const arma::vec2& warp_vec, const arma::vec2& p) const;
-  arma::vec2 warpGradient(const arma::vec2& warp_vec, const arma::vec2& p) const;
-  arma::mat22 warpHessian(const arma::vec2& warp_vec, const arma::vec2& p) const;
-
-  double totalWarp(const arma::vec2& p) const;
-  double repellingPotential(const arma::vec2& p) const;
-  arma::vec2 repellingGradient(const arma::vec2& p) const;
-  arma::mat22 repellingHessian(const arma::vec2& p) const;
-
-public:
-  static void setParams(double eta, double R) { eta_ = eta; R_ = R; }
-
-  arma::vec2 center_;
-  arma::vec2 velocity_;
-  double r_;     // Radius of obstacle
-
-  double U_s_;   // Static factor of potential value at obstacle border
-  double U_d_;   // Dynamic factor of potential value at obstacle border
-
-  std::vector<arma::vec2> warp_vectors_;
-
-  static double eta_;   // Border value parameter
-  static double R_;     // Range constant of potential
-};
-
-
 class PotentialsController
 {
 public:
   PotentialsController(ros::NodeHandle& nh, ros::NodeHandle& nh_local);
+  ~PotentialsController();
 
 private:
   bool updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
   bool collectData(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
   void timerCallback(const ros::TimerEvent& e);
 
-  void odomCallback(const nav_msgs::Odometry::ConstPtr odom_msg);
-  void refOdomCallback(const nav_msgs::Odometry::ConstPtr ref_odom_msg);
+  void referenceTwistCallback(const geometry_msgs::Twist::ConstPtr reference_twist_msg);
   void obstaclesCallback(const obstacle_detector::Obstacles::ConstPtr obstacles_msg);
 
   void initialize() { std_srvs::Empty empt; updateParams(empt.request, empt.response); }
+  void sendZeroControls() { static geometry_msgs::Twist::ConstPtr zero_controls(new geometry_msgs::Twist); controls_pub_.publish(zero_controls); }
 
   int nearestObstacleIndex();
   void prepareObstacles();
@@ -138,18 +95,18 @@ private:
   ros::ServiceServer collector_srv_;
   ros::Timer timer_;
 
-  ros::Subscriber odom_sub_;
-  ros::Subscriber ref_odom_sub_;
+  tf::TransformListener tf_ls_;
+
+  ros::Subscriber reference_twist_sub_;
   ros::Subscriber obstacles_sub_;
+
   ros::Publisher controls_pub_;
 
   arma::vec2 pose_;
-  arma::vec2 velocity_;
   arma::vec2 ref_pose_;
   arma::vec2 ref_velocity_;
 
   double theta_;
-  double omega_;
   double ref_theta_;
   double ref_omega_;
 
@@ -174,6 +131,10 @@ private:
   double p_max_u_;
   double p_max_v_;
   double p_max_w_;
+
+  std::string p_fixed_frame_id_;
+  std::string p_robot_frame_id_;
+  std::string p_reference_frame_id_;
 };
 
 } // namespace robor_controllers

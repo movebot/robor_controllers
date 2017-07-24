@@ -25,13 +25,13 @@ add_library(feedback_controller src/feedback_controller.cpp)
 target_link_libraries(feedback_controller ${catkin_LIBRARIES})
 add_dependencies(feedback_controller ${catkin_EXPORTED_TARGETS})
 
+add_library(potentials_controller src/potentials_controller.cpp src/obstacle.cpp)
+target_link_libraries(potentials_controller ${catkin_LIBRARIES} ${ARMADILLO_LIBRARIES})
+add_dependencies(potentials_controller ${catkin_EXPORTED_TARGETS})
+
 add_library(urakubo_controller src/urakubo_controller.cpp)
 target_link_libraries(urakubo_controller ${catkin_LIBRARIES} ${ARMADILLO_LIBRARIES})
 add_dependencies(urakubo_controller ${catkin_EXPORTED_TARGETS})
-
-add_library(potentials_controller src/potentials_controller.cpp)
-target_link_libraries(potentials_controller ${catkin_LIBRARIES} ${ARMADILLO_LIBRARIES})
-add_dependencies(potentials_controller ${catkin_EXPORTED_TARGETS})
 
 #
 # Build nodes
@@ -42,11 +42,11 @@ target_link_libraries(manual_controller_node manual_controller)
 add_executable(feedback_controller_node src/nodes/feedback_controller_node.cpp)
 target_link_libraries(feedback_controller_node feedback_controller)
 
-add_executable(urakubo_controller_node src/nodes/urakubo_controller_node.cpp)
-target_link_libraries(urakubo_controller_node urakubo_controller)
-
 add_executable(potentials_controller_node src/nodes/potentials_controller_node.cpp)
 target_link_libraries(potentials_controller_node potentials_controller)
+
+add_executable(urakubo_controller_node src/nodes/urakubo_controller_node.cpp)
+target_link_libraries(urakubo_controller_node urakubo_controller)
 
 #
 # Build nodelets
@@ -54,8 +54,8 @@ target_link_libraries(potentials_controller_node potentials_controller)
 add_library(${PROJECT_NAME}_nodelets
   src/nodelets/manual_controller_nodelet.cpp
   src/nodelets/feedback_controller_nodelet.cpp
-  src/nodelets/urakubo_controller_nodelet.cpp
-  src/nodelets/potentials_controller_nodelet.cpp)
+  src/nodelets/potentials_controller_nodelet.cpp
+  src/nodelets/urakubo_controller_nodelet.cpp)
 target_link_libraries(${PROJECT_NAME}_nodelets manual_controller feedback_controller potentials_controller urakubo_controller)
 
 #
@@ -78,8 +78,8 @@ add_definitions(-DQT_NO_KEYWORDS)
 add_library(${PROJECT_NAME}_gui
   src/panels/manual_controller_panel.cpp include/${PROJECT_NAME}/panels/manual_controller_panel.h
   src/panels/feedback_controller_panel.cpp include/${PROJECT_NAME}/panels/feedback_controller_panel.h
-  src/panels/urakubo_controller_panel.cpp include/${PROJECT_NAME}/panels/urakubo_controller_panel.h
-  src/panels/potentials_controller_panel.cpp include/${PROJECT_NAME}/panels/potentials_controller_panel.h)
+  src/panels/potentials_controller_panel.cpp include/${PROJECT_NAME}/panels/potentials_controller_panel.h
+  src/panels/urakubo_controller_panel.cpp include/${PROJECT_NAME}/panels/urakubo_controller_panel.h)
 target_link_libraries(${PROJECT_NAME}_gui ${roscpp_LIBRARIES} ${QT_LIBRARIES})
 add_dependencies(${PROJECT_NAME}_gui ${catkin_EXPORTED_TARGETS})
 

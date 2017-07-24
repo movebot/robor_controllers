@@ -61,5 +61,4 @@ Use `Feedback Controller` Rviz panel for convenient usage.
 -----------------------
 
 ## The potentials_controller
-
-Potentials controller is an advanced motion controller incorporating obstacle avoidance. The controller subscribes to messages of type `nav_msgs/Odometry` from topic `reference_state` and messages of the same type from topic `robot_state` as well as messages of type `obstacle_detection/Obstacles` from topic `obstacles`. T.B.C.
+T.B.C.

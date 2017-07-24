@@ -57,10 +57,34 @@ PotentialsController::PotentialsController(ros::NodeHandle& nh, ros::NodeHandle&
   initialize();
 }
 
+PotentialsController::~PotentialsController() {
+  nh_local_.deleteParam("active");
+  nh_local_.deleteParam("run");
+  nh_local_.deleteParam("assisted_control");
+
+  nh_local_.deleteParam("loop_rate");
+
+  nh_local_.deleteParam("R");
+  nh_local_.deleteParam("eta");
+  nh_local_.deleteParam("delta");
+  nh_local_.deleteParam("ko_velocity");
+
+  nh_local_.deleteParam("gain_pose");
+  nh_local_.deleteParam("gain_theta");
+
+  nh_local_.deleteParam("max_u");
+  nh_local_.deleteParam("max_v");
+  nh_local_.deleteParam("max_w");
+
+  nh_local_.deleteParam("fixed_frame_id");
+  nh_local_.deleteParam("robot_frame_id");
+  nh_local_.deleteParam("reference_frame_id");
+}
+
 bool PotentialsController::updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res) {
   bool prev_active = p_active_;
 
-  nh_local_.param<bool>("active", p_active_, false);
+  nh_local_.param<bool>("active", p_active_, true);
   nh_local_.param<bool>("run", p_run_, false);
   nh_local_.param<bool>("assisted_control", p_assisted_control_, false);
 
@@ -69,15 +93,19 @@ bool PotentialsController::updateParams(std_srvs::Empty::Request& req, std_srvs:
 
   nh_local_.param<double>("R", p_R_, 0.5);
   nh_local_.param<double>("eta", p_eta_, 1.2);
-  nh_local_.param<double>("delta", p_delta_, 0.2);
+  nh_local_.param<double>("delta", p_delta_, 0.5);
   nh_local_.param<double>("ko_velocity", p_ko_velocity_, 0.15);
 
   nh_local_.param<double>("gain_pose", p_gain_pose_, 0.5);
-  nh_local_.param<double>("gain_theta", p_gain_theta_, 4.0);
+  nh_local_.param<double>("gain_theta", p_gain_theta_, 0.5);
 
-  nh_local_.param<double>("max_u", p_max_u_, 0.4);
-  nh_local_.param<double>("max_v", p_max_v_, 0.4);
-  nh_local_.param<double>("max_w", p_max_w_, 2.5);
+  nh_local_.param<double>("max_u", p_max_u_, 0.5);
+  nh_local_.param<double>("max_v", p_max_v_, 0.5);
+  nh_local_.param<double>("max_w", p_max_w_, 3.0);
+
+  nh_local_.param<string>("fixed_frame_id", p_fixed_frame_id_, string("map"));
+  nh_local_.param<string>("robot_frame_id", p_robot_frame_id_, string("robot"));
+  nh_local_.param<string>("reference_frame_id", p_reference_frame_id_, string("reference"));
 
   Obstacle::setParams(p_eta_, p_R_);
 
@@ -85,26 +113,21 @@ bool PotentialsController::updateParams(std_srvs::Empty::Request& req, std_srvs:
 
   if (p_active_ != prev_active) {
     if (p_active_) {
-      odom_sub_ = nh_.subscribe("robot_state", 5, &PotentialsController::odomCallback, this);
-      ref_odom_sub_ = nh_.subscribe("reference_state", 5, &PotentialsController::refOdomCallback, this);
-      obstacles_sub_ = nh_.subscribe("obstacles", 5, &PotentialsController::obstaclesCallback, this);
-      controls_pub_ = nh_.advertise<geometry_msgs::Twist>("controls", 5);
+      reference_twist_sub_ = nh_.subscribe("reference_twist", 10, &PotentialsController::referenceTwistCallback, this);
+      obstacles_sub_ = nh_.subscribe("obstacles", 10, &PotentialsController::obstaclesCallback, this);
+      controls_pub_ = nh_.advertise<geometry_msgs::Twist>("controls", 10);
     }
     else {
-      geometry_msgs::TwistPtr controls_msg(new geometry_msgs::Twist);
-      controls_pub_.publish(controls_msg);
+      sendZeroControls();
 
-      odom_sub_.shutdown();
-      ref_odom_sub_.shutdown();
+      reference_twist_sub_.shutdown();
       obstacles_sub_.shutdown();
       controls_pub_.shutdown();
     }
   }
 
-  if (p_active_ && !p_run_) {
-    geometry_msgs::TwistPtr controls_msg(new geometry_msgs::Twist);
-    controls_pub_.publish(controls_msg);
-  }
+  if (p_active_ && !p_run_)
+    sendZeroControls();
 
   if (p_active_ && p_run_)
     timer_.start();
@@ -115,8 +138,7 @@ bool PotentialsController::updateParams(std_srvs::Empty::Request& req, std_srvs:
 }
 
 bool PotentialsController::collectData(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res) {
-  odom_sub_.shutdown();
-  ref_odom_sub_.shutdown();
+  reference_twist_sub_.shutdown();
   obstacles_sub_.shutdown();
   controls_pub_.shutdown();
 
@@ -168,7 +190,7 @@ bool PotentialsController::collectData(std_srvs::Empty::Request& req, std_srvs::
   }
 
   string home_path = getenv("HOME");
-  string folder_name = home_path + "/Robor/records/";
+  string folder_name = home_path + "/potential_records/";
 
   boost::filesystem::create_directories(folder_name);
   potential.save(folder_name + "U.txt", csv_ascii);
@@ -190,13 +212,34 @@ bool PotentialsController::collectData(std_srvs::Empty::Request& req, std_srvs::
 
   pose_ = saved_pose;
 
-  odom_sub_ = nh_.subscribe("robot_state", 5, &PotentialsController::odomCallback, this);
-  ref_odom_sub_ = nh_.subscribe("reference_state", 5, &PotentialsController::refOdomCallback, this);
+  reference_twist_sub_ = nh_.subscribe("reference_twist", 5, &PotentialsController::referenceTwistCallback, this);
   obstacles_sub_ = nh_.subscribe("obstacles", 5, &PotentialsController::obstaclesCallback, this);
   controls_pub_ = nh_.advertise<geometry_msgs::Twist>("controls", 5);
 }
 
 void PotentialsController::timerCallback(const ros::TimerEvent& e) {
+  ros::Time now = ros::Time::now();
+
+  tf::StampedTransform robot_tf;
+  try {
+    tf_ls_.waitForTransform(p_fixed_frame_id_, p_robot_frame_id_, now, ros::Duration(0.1));
+    tf_ls_.lookupTransform(p_fixed_frame_id_, p_robot_frame_id_, now, robot_tf);
+
+    pose_ = { robot_tf.getOrigin().x(), robot_tf.getOrigin().y() };
+    theta_ = tf::getYaw(robot_tf.getRotation());
+  }
+  catch (tf::TransformException ex) { sendZeroControls(); return; }
+
+  tf::StampedTransform reference_tf;
+  try {
+    tf_ls_.waitForTransform(p_fixed_frame_id_, p_reference_frame_id_, now, ros::Duration(0.1));
+    tf_ls_.lookupTransform(p_fixed_frame_id_, p_reference_frame_id_, now, reference_tf);
+
+    ref_pose_ = { reference_tf.getOrigin().x(), reference_tf.getOrigin().y() };
+    ref_theta_ = tf::getYaw(reference_tf.getRotation());
+  }
+  catch (tf::TransformException ex) { sendZeroControls(); return; }
+
   if (p_assisted_control_) {
     ref_pose_ = pose_;
     p_gain_pose_ = 0.0;
@@ -225,9 +268,10 @@ void PotentialsController::timerCallback(const ros::TimerEvent& e) {
   //  else
   //    e_theta_aux = M_PI / 2.0;
 
-  double e_theta = atan2(sin(theta_ - ref_theta_), cos(theta_ - ref_theta_));
-  double omega = -p_gain_theta_ * e_theta + ref_omega_;
-  // double omega = -p_gain_theta_ * ((1.0 - exp(-norm(velocity) / 0.01)) * e_theta_aux + exp(-norm(velocity) / 0.01) * e_theta) + ref_omega_;
+//  double e_theta = atan2(sin(theta_ - ref_theta_), cos(theta_ - ref_theta_));
+//  double omega = -p_gain_theta_ * e_theta + ref_omega_;
+
+  double omega = 0.0;
 
   // The control signals must be described in the base coordinate system
   double u, v;
@@ -244,20 +288,9 @@ void PotentialsController::timerCallback(const ros::TimerEvent& e) {
   controls_pub_.publish(controls_msg);
 }
 
-void PotentialsController::odomCallback(const nav_msgs::Odometry::ConstPtr odom_msg) {
-  pose_ = { odom_msg->pose.pose.position.x, odom_msg->pose.pose.position.y };
-  velocity_ = { odom_msg->twist.twist.linear.x, odom_msg->twist.twist.linear.y };
-
-  theta_ = tf::getYaw(odom_msg->pose.pose.orientation);
-  omega_ = odom_msg->twist.twist.angular.z;
-}
-
-void PotentialsController::refOdomCallback(const nav_msgs::Odometry::ConstPtr ref_odom_msg) {
-  ref_pose_ = { ref_odom_msg->pose.pose.position.x, ref_odom_msg->pose.pose.position.y };
-  ref_velocity_ = { ref_odom_msg->twist.twist.linear.x, ref_odom_msg->twist.twist.linear.y };
-
-  ref_theta_ = tf::getYaw(ref_odom_msg->pose.pose.orientation);
-  ref_omega_ = ref_odom_msg->twist.twist.angular.z;
+void PotentialsController::referenceTwistCallback(const geometry_msgs::Twist::ConstPtr reference_twist_msg) {
+  ref_velocity_ = { reference_twist_msg->linear.x, reference_twist_msg->linear.y };
+  ref_omega_ = reference_twist_msg->angular.z;
 }
 
 void PotentialsController::obstaclesCallback(const obstacle_detector::Obstacles::ConstPtr obstacles_msg) {
@@ -369,30 +402,16 @@ void PotentialsController::setWarpVectors(Obstacle& o1, Obstacle& o2) {
 }
 
 void PotentialsController::scaleControls(double& u, double& v, double& w) {
-//  double s = 1.0;
+  double s = 1.0;
 
-//  if (fabs(u) / p_max_u_ > s)
-//    s = fabs(u) / p_max_u_;
-//  if (fabs(v) / p_max_v_ > s)
-//    s = fabs(v) / p_max_v_;
-//  if (fabs(w) / p_max_w_ > s)
-//    s = fabs(w) / p_max_w_;
+  if (fabs(u) / p_max_u_ > s)
+    s = fabs(u) / p_max_u_;
+  if (fabs(v) / p_max_v_ > s)
+    s = fabs(v) / p_max_v_;
+  if (fabs(w) / p_max_w_ > s)
+    s = fabs(w) / p_max_w_;
 
-//  u /= s;  v /= s;  w /= s;
-  double s_u = 1.0;
-  double s_v = 1.0;
-  double s_w = 1.0;
-
-  if (fabs(u) / p_max_u_ > s_u)
-    s_u = fabs(u) / p_max_u_;
-
-  if (fabs(v) / p_max_v_ > s_v)
-    s_v = fabs(v) / p_max_v_;
-
-  if (fabs(w) / p_max_w_ > s_w)
-    s_w = fabs(w) / p_max_w_;
-
-  u /= s_u;  v /= s_v;  w /= s_w;
+  u /= s;  v /= s;  w /= s;
 }
 
 double PotentialsController::attractingPotential() {
@@ -431,180 +450,3 @@ vec2 PotentialsController::saddleAvoidanceFactor(const Obstacle& o) {
 
   return anti_saddle;
 }
-
-//
-// Obstacle Methods
-//
-double Obstacle::rho(const vec2& p) const {
-  return norm(p - center_);
-}
-
-vec2 Obstacle::rhoGradient(const vec2& p) const {
-  return (p - center_) / rho(p);
-}
-
-mat22 Obstacle::rhoHessian(const vec2& p) const {
-  vec2 ro_grad = rhoGradient(p);
-  vec2 perp_grad = { ro_grad(1), -ro_grad(0) };
-
-  return perp_grad * trans(perp_grad) / rho(p);
-}
-
-
-double Obstacle::rawRepellingPotential(const double ro) const {
-  return (U_s_ + U_d_) * exp(-(ro - r_) / R_);
-}
-
-double Obstacle::rawRepellingPotential(const vec2& p) const {
-  double ro = rho(p);
-  return (ro > r_) ? rawRepellingPotential(ro) : (U_s_ + U_d_);
-}
-
-vec2 Obstacle::rawRepellingGradient(const vec2& p) const {
-  double ro = rho(p);
-  vec2 grad_U_d = 0.5 * eta_ * R_ * rhoHessian(p) * velocity_;
-  return (ro > r_) ? (grad_U_d - (U_s_ + U_d_) * rhoGradient(p) / R_) * exp(-(ro - r_) / R_) : vec(2).zeros();
-}
-
-mat22 Obstacle::rawRepellingHessian(const vec2& p) const {
-  double ro = rho(p);
-  vec2 ro_grad = rhoGradient(p);
-  mat22 ro_hess = rhoHessian(p);
-
-  double x_ = p(0) - center_(0);
-  double y_ = p(1) - center_(1);
-
-  mat22 aux1 = { {-y_ * velocity_(1), 2.0 * x_ * velocity_(1) - y_ * velocity_(0)}, {2.0 * y_ * velocity_(0) - x_ * velocity_(1), -x_ * velocity_(0)} };
-  mat22 aux2 = -3.0 * ro_grad * trans(ro_hess * velocity_) / quaded(ro) + aux1;
-
-  mat22 A = (0.5 * eta_ * (R_ * aux2 - (ro_hess * velocity_) * trans(ro_grad)) - (U_s_ + U_d_) * ro_hess / R_) * exp(-(ro - r_) / R_);
-  mat22 B = -rawRepellingGradient(p) * trans(ro_grad) / R_;
-
-  return (ro > r_) ? A + B : mat(2,2).zeros();
-}
-
-
-double Obstacle::warpDistance(const vec2& warp_vec, const vec2& p, double& range) const {
-  range = norm(warp_vec) - r_;
-  return dot(p - center_, warp_vec) / (range + r_) - r_;
-}
-
-vec2 Obstacle::warpDistanceGradient(const vec2& warp_vec) const {
-  return normalise(warp_vec);
-}
-
-mat22 Obstacle::warpDistanceHessian() const {
-  return mat(2,2).zeros();
-}
-
-
-double Obstacle::warp(const double d, const double D) const {
-  return 2.0 * cubed(d / D) - 3.0 * squared(d / D) + 1.0;
-}
-
-double Obstacle::warp(const vec2& warp_vec, const vec2& p) const {
-  double warp_range;
-  double warp_distance = warpDistance(warp_vec, p, warp_range);
-
-  if (warp_distance >= warp_range)
-    return 0.0;
-  else if (warp_distance <= 0.0)
-    return 1.0;
-  else
-    return warp(warp_distance, warp_range);
-}
-
-vec2 Obstacle::warpGradient(const vec2& warp_vec, const vec2& p) const {
-  double warp_range;
-  double warp_distance = warpDistance(warp_vec, p, warp_range);
-
-  if (warp_distance > 0.0 && warp_distance < warp_range)
-    return 6.0 * warp_distance * (warp_distance - warp_range) * warpDistanceGradient(warp_vec) / cubed(warp_range);
-  else
-    return vec(2).zeros();
-}
-
-mat22 Obstacle::warpHessian(const vec2& warp_vec, const vec2& p) const {
-  double warp_range;
-  double warp_distance = warpDistance(warp_vec, p, warp_range);
-  vec2 warp_grad = warpDistanceGradient(warp_vec);
-
-  if (warp_distance > 0.0 && warp_distance < warp_range)
-    return 6.0 * (2.0 * warp_distance - warp_range) * warp_grad * trans(warp_grad) / cubed(warp_range); // + 6.0 * warp_distance * (warp_distance - warp_range) * warpRhoHessian() / cubed(warp_range); //<-zero!
-  else
-    return mat(2,2).zeros();
-}
-
-double Obstacle::totalWarp(const vec2& p) const {
-  double s = 1.0;
-
-  for (const vec2& warp_vec : warp_vectors_)
-    s *= warp(warp_vec, p);
-
-  return s;
-}
-
-double Obstacle::repellingPotential(const vec2& p) const {
-  return rawRepellingPotential(p) * totalWarp(p);
-}
-
-vec2 Obstacle::repellingGradient(const vec2& p) const {
-  vec2 grad_P = rawRepellingGradient(p) * totalWarp(p);
-  vec2 grad_warp = {0, 0};
-
-  for (int j = 0; j < warp_vectors_.size(); ++j) {
-    vec2 dP = warpGradient(warp_vectors_[j], p);
-
-    for (int k = 0; k < warp_vectors_.size(); ++k)
-      if (k != j) dP *= warp(warp_vectors_[k], p);
-
-    grad_warp += dP;
-  }
-
-  grad_P += rawRepellingPotential(p) * grad_warp;
-
-  return grad_P;
-}
-
-mat22 Obstacle::repellingHessian(const vec2& p) const {
-  mat22 H1 = rawRepellingHessian(p) * totalWarp(p);
-
-  vec2 warp_grad = vec(2).zeros();
-  for (int k = 0; k < warp_vectors_.size(); ++k) {
-    vec2 grad_s = warpGradient(warp_vectors_[k], p);
-
-    for (int j = 0; j < warp_vectors_.size(); ++j)
-      if (j != k) grad_s *= warp(warp_vectors_[j], p);
-
-    warp_grad += grad_s;
-  }
-  mat22 H2 = 2.0 * rawRepellingGradient(p) * trans(warp_grad);
-
-  mat22 H3 = mat(2,2).zeros();
-  for (int k = 0; k < warp_vectors_.size(); ++k) {
-    mat22 warp_hess = warpHessian(warp_vectors_[k], p);
-    vec2 warp_grad_2 = vec(2).zeros();
-
-    for (int j = 0; j < warp_vectors_.size(); ++j) {
-      if (j != k) {
-        warp_hess *= warp(warp_vectors_[j], p);
-
-        vec2 grad_s_j = warpGradient(warp_vectors_[j], p);
-        for (int l = 0; l < warp_vectors_.size(); ++l)
-          if (l != j && l != k)
-            grad_s_j *= warp(warp_vectors_[l], p);
-
-        warp_grad_2 += grad_s_j;
-      }
-    }
-
-    H3 += warp_hess + warpGradient(warp_vectors_[k], p) * trans(warp_grad_2);
-  }
-
-  mat22 H = H1 + H2 + rawRepellingPotential(p) * H3;
-
-  return H;
-}
-
-double Obstacle::eta_ = 1.0;
-double Obstacle::R_ = 1.0;
