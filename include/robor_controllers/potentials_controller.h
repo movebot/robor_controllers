@@ -42,7 +42,6 @@
 #include <tf/tf.h>
 #include <tf/transform_listener.h>
 #include <std_srvs/Empty.h>
-#include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Pose2D.h>
 #include <geometry_msgs/Twist.h>
 #include <obstacle_detector/Obstacles.h>

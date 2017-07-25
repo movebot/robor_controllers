@@ -117,7 +117,7 @@ void FeedbackController::timerCallback(const ros::TimerEvent& e) {
 
   tf::StampedTransform error_tf;
   try {
-    tf_ls_.waitForTransform(p_robot_frame_id_, p_reference_frame_id_, now, ros::Duration(0.01));
+    tf_ls_.waitForTransform(p_robot_frame_id_, p_reference_frame_id_, now, ros::Duration(0.05));
     tf_ls_.lookupTransform(p_robot_frame_id_, p_reference_frame_id_, now, error_tf);
   }
   catch (tf::TransformException ex) { error_tf.setIdentity(); }
