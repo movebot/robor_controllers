@@ -130,7 +130,8 @@ private:
   double p_kappa_;
   double p_inv_kappa_;
 
-  double p_epsilon_e_;
+  double p_epsilon_n_;
+  double p_epsilon_p_;
   double p_epsilon_d_;
 
   double p_min_saddle_gradient_;

@@ -62,6 +62,7 @@ UrakuboController::~UrakuboController() {
   nh_local_.deleteParam("kappa");
 
   nh_local_.deleteParam("epsilon_e");
+  nh_local_.deleteParam("epsilon_p");
   nh_local_.deleteParam("epsilon_d");
 
   nh_local_.deleteParam("min_saddle_gradient");
@@ -96,7 +97,8 @@ bool UrakuboController::updateParams(std_srvs::Empty::Request& req, std_srvs::Em
   nh_local_.param<double>("epsilon", p_epsilon_, 0.0001);
   nh_local_.param<double>("kappa", p_kappa_, 3.0);
 
-  nh_local_.param<double>("epsilon_e", p_epsilon_e_, 0.1);
+  nh_local_.param<double>("epsilon_e", p_epsilon_n_, 0.1);
+  nh_local_.param<double>("epsilon_p", p_epsilon_n_, 0.01);
   nh_local_.param<double>("epsilon_d", p_epsilon_d_, 0.01);
 
   nh_local_.param<double>("min_saddle_gradient", p_min_saddle_gradient_, 0.05);
@@ -164,7 +166,6 @@ void UrakuboController::timerCallback(const ros::TimerEvent& e) {
   pose_.y = pose_tf.getOrigin().y();
   pose_.theta = tf::getYaw(pose_tf.getRotation());
 
-
   double dt = 1.0 / p_loop_rate_; // (e.current_real - e.last_real).toSec();
   t_ += dt;
 
@@ -187,28 +188,28 @@ void UrakuboController::obstaclesCallback(const obstacle_detector::Obstacles::Co
 void UrakuboController::computeControls() {
   geometry_msgs::TwistPtr controls_msg(new geometry_msgs::Twist);
 
-  double b, h, g;               // Variable parameters
+//  double b, h, g;               // Variable parameters
 
-  mat B = mat(3, 2).zeros();    // Input matrix
-  vec L = vec(3).zeros();       // [sin(fi) -cos(fi) 0]^T
+//  mat B = mat(3, 2).zeros();    // Input matrix
+//  vec L = vec(3).zeros();       // [sin(fi) -cos(fi) 0]^T
   vec graadV = vec(3).zeros();  // Gradient of navigation function
   vec u = vec(2).zeros();       // Control signals
 
   vec pose = { pose_.x, pose_.y, pose_.theta };
 
-  // Auxiliary matrices
-  mat I = eye<mat>(2, 2);
-  mat J = mat(2, 2).zeros();
-  J <<  0.0 << 1.0 << endr
-    << -1.0 << 0.0 << endr;
+//  // Auxiliary matrices
+//  mat I = eye<mat>(2, 2);
+//  mat J = mat(2, 2).zeros();
+//  J <<  0.0 << 1.0 << endr
+//    << -1.0 << 0.0 << endr;
 
-  // Update input matrix
-  B(0, 0) = cos(pose_.theta);
-  B(1, 0) = sin(pose_.theta);
-  B(2, 1) = 1.0;
+//  // Update input matrix
+//  B(0, 0) = cos(pose_.theta);
+//  B(1, 0) = sin(pose_.theta);
+//  B(2, 1) = 1.0;
 
-  L(0) =  sin(pose_.theta);
-  L(1) = -cos(pose_.theta);
+//  L(0) =  sin(pose_.theta);
+//  L(1) = -cos(pose_.theta);
 
   beta_list_.clear();
   grad_beta_list_.clear();
@@ -229,54 +230,64 @@ void UrakuboController::computeControls() {
   // Recalculate gradient of navigation function
   graadV = gradV();
 
-  // Recalculate parameter b
-  g = norm(trans(B) * graadV);
-  h = pow(g, 2.0) + p_epsilon_ * sqrt(g);
+//  // Recalculate parameter b
+//  g = norm(trans(B) * graadV);
+//  h = pow(g, 2.0) + p_epsilon_ * sqrt(g);
 
-  if (h != 0.0)
-    b = -p_b_dash_ * dot(L, graadV) / h;
-  else
-    b = p_b_dash_;
+//  if (h != 0.0)
+//    b = -p_b_dash_ * dot(L, graadV) / h;
+//  else
+//    b = p_b_dash_;
+//  // Calculate control signals
+//  vec eigen_vals = vec(3).zeros();
+//  vec min_eigen_vec = vec(3).zeros();
 
-  // Calculate control signals
-  vec eigen_vals = vec(3).zeros();
-  vec min_eigen_vec = vec(3).zeros();
-
-  if (detectSaddle(min_eigen_vec, eigen_vals))
-    u = saddleAvoidance(min_eigen_vec, eigen_vals);
-  else {
+//  if (detectSaddle(min_eigen_vec, eigen_vals))
+//    u = saddleAvoidance(min_eigen_vec, eigen_vals);
+//  else {
 //   if (p_normalize_gradient_ && norm(graadV) > p_min_normalizing_gradient_ && V() > p_min_normalizing_potential_)
 //      graadV /= norm(graadV);
+//  }
+// u = -(p_a_ * I + b * J) * trans(B) * graadV / norm(graadV);
+// u = -(p_a_ * I + b * J) * trans(B) * graadV * (norm(pose) + p_epsilon_e_) / (norm(trans(B) * graadV) + p_epsilon_d_);
+// && norm(graadV) > p_min_normalizing_gradient_ && V() > p_min_normalizing_potential_
 
-    //ROS_INFO_STREAM("Potential: " << V() << ", GradNorm: " << norm(graadV));
+  double v_x, v_y, w;
+  vec graadV2 = { graadV(0), graadV(1) };
 
-    if (p_normalize_gradient_ && norm(graadV) > p_min_normalizing_gradient_ && V() > p_min_normalizing_potential_)
-      u = -(p_a_ * I + b * J) * trans(B) * graadV / norm(graadV);
-      //u = -(p_a_ * I + b * J) * trans(B) * graadV * (norm(pose) + p_epsilon_e_) / (norm(trans(B) * graadV) + p_epsilon_d_);
-    else
-      u = -(p_a_ * I + b * J) * trans(B) * graadV;
-  }
+  if (p_normalize_gradient_)
+    u = -graadV2 * (norm(pose) + p_epsilon_n_) / (pow(norm(graadV2), 2.0 + p_epsilon_p_) + p_epsilon_d_);
+  else
+    u = -graadV2;
+
+  v_x = u(0);
+  v_y = u(1);
+  w = -1.0 * pose_.theta;
 
   // Scale the control signals
   double s = 1.0;
 
-  if (fabs(u(0)) / p_max_u_ > s)
-    s = fabs(u(0)) / p_max_u_;
-  if (fabs(u(1)) / p_max_w_ > s)
-    s = fabs(u(1)) / p_max_w_;
+  if (fabs(v_x) / p_max_u_ > s)
+    s = fabs(v_x) / p_max_u_;
+  if (fabs(v_y) / p_max_v_ > s)
+    s = fabs(v_y) / p_max_v_;
+  if (fabs(w) / p_max_w_ > s)
+    s = fabs(w) / p_max_w_;
 
   if (s > 1.0) {
-    u(0) /= s;
-    u(1) /= s;
+    v_x /= s;
+    v_y /= s;
+    w /= s;
   }
 
-  if (sqrt(pose_.x * pose_.x + pose_.y * pose_.y + pose_.theta * pose_.theta / 9.0) < 0.01) {
-    u(0) = 0.0;
-    u(1) = 0.0;
-  }
+//  if (sqrt(pose_.x * pose_.x + pose_.y * pose_.y + pose_.theta * pose_.theta / 9.0) < 0.01) {
+//    u(0) = 0.0;
+//    u(1) = 0.0;
+//  }
 
-  controls_msg->linear.x = u(0);
-  controls_msg->angular.z = u(1);
+  controls_msg->linear.x = v_x;
+  controls_msg->linear.y = v_y;
+  controls_msg->angular.z = w;
 
   controls_pub_.publish(controls_msg);
 }
@@ -437,9 +448,9 @@ double UrakuboController::C() {
 vec UrakuboController::gradC() {
   vec gradC = vec(3).zeros();
 
-  gradC(0) = 2.0 * pose_.x * (1.0 - p_k_w_ * pow(pose_.theta, 2.0) / pow(p_k_w_ + squaredNormR(), 2.0));
-  gradC(1) = 2.0 * pose_.y * (1.0 - p_k_w_ * pow(pose_.theta, 2.0) / pow(p_k_w_ + squaredNormR(), 2.0));
-  gradC(2) = 2.0 * pose_.theta * p_k_w_ / (p_k_w_ + squaredNormR());
+  gradC(0) = 2.0 * pose_.x;// * (1.0 - p_k_w_ * pow(pose_.theta, 2.0) / pow(p_k_w_ + squaredNormR(), 2.0));
+  gradC(1) = 2.0 * pose_.y;// * (1.0 - p_k_w_ * pow(pose_.theta, 2.0) / pow(p_k_w_ + squaredNormR(), 2.0));
+  gradC(2) = 0.0;// 2.0 * pose_.theta * p_k_w_ / (p_k_w_ + squaredNormR());
 
   return gradC;
 }
