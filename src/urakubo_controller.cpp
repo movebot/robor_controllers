@@ -48,6 +48,38 @@ UrakuboController::UrakuboController(ros::NodeHandle& nh, ros::NodeHandle& nh_lo
   initialize();
 }
 
+UrakuboController::~UrakuboController() {
+  nh_local_.deleteParam("active");
+  nh_local_.deleteParam("run");
+  nh_local_.deleteParam("normalize_gradient");
+
+  nh_local_.deleteParam("loop_rate");
+
+  nh_local_.deleteParam("a");
+  nh_local_.deleteParam("b_");
+  nh_local_.deleteParam("k_w");
+  nh_local_.deleteParam("epsilon");
+  nh_local_.deleteParam("kappa");
+
+  nh_local_.deleteParam("epsilon_e");
+  nh_local_.deleteParam("epsilon_d");
+
+  nh_local_.deleteParam("min_saddle_gradient");
+  nh_local_.deleteParam("min_normalizing_potential");
+  nh_local_.deleteParam("min_normalizing_gradient");
+
+  nh_local_.deleteParam("max_u");
+  nh_local_.deleteParam("max_v");
+  nh_local_.deleteParam("max_w");
+
+  nh_local_.deleteParam("world_x");
+  nh_local_.deleteParam("world_y");
+  nh_local_.deleteParam("world_radius");
+
+  nh_local_.deleteParam("robot_frame_id");
+  nh_local_.deleteParam("reference_frame_id");
+}
+
 bool UrakuboController::updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res) {
   bool prev_active = p_active_;
 
@@ -77,7 +109,10 @@ bool UrakuboController::updateParams(std_srvs::Empty::Request& req, std_srvs::Em
 
   nh_local_.param<double>("world_x", p_world_obstacle_.x, 0.0);
   nh_local_.param<double>("world_y", p_world_obstacle_.y, 0.0);
-  nh_local_.param<double>("world_radius", p_world_obstacle_.r, 3.0);
+  nh_local_.param<double>("world_radius", p_world_obstacle_.r, 5.0);
+
+  nh_local_.param<string>("robot_frame_id", p_robot_frame_id_, string("robot"));
+  nh_local_.param<string>("reference_frame_id", p_reference_frame_id_, string("reference"));
 
   timer_.setPeriod(ros::Duration(p_sampling_time_), false);
 
@@ -88,23 +123,15 @@ bool UrakuboController::updateParams(std_srvs::Empty::Request& req, std_srvs::Em
 
   if (p_active_ != prev_active) {
     if (p_active_) {
-      odom_sub_ = nh_.subscribe("robot_state", 5, &UrakuboController::odomCallback, this);
       obstacles_sub_ = nh_.subscribe("obstacles", 5, &UrakuboController::obstaclesCallback, this);
       controls_pub_  = nh_.advertise<geometry_msgs::Twist>("controls", 5);
-      potential_pub_ = nh_.advertise<std_msgs::Float64>("potential", 5);
-      grad_norm_pub_ = nh_.advertise<std_msgs::Float64>("grad_norm", 5);
-      is_saddle_pub_ = nh_.advertise<std_msgs::Float64>("is_saddle", 5);
     }
     else {
       geometry_msgs::TwistPtr controls_msg(new geometry_msgs::Twist);
       controls_pub_.publish(controls_msg);
 
-      odom_sub_.shutdown();
       obstacles_sub_.shutdown();
       controls_pub_.shutdown();
-      potential_pub_.shutdown();
-      grad_norm_pub_.shutdown();
-      is_saddle_pub_.shutdown();
     }
   }
 
@@ -124,16 +151,24 @@ bool UrakuboController::updateParams(std_srvs::Empty::Request& req, std_srvs::Em
 }
 
 void UrakuboController::timerCallback(const ros::TimerEvent& e) {
+  ros::Time now = ros::Time::now();
+
+  tf::StampedTransform pose_tf;
+  try {
+    tf_ls_.waitForTransform(p_robot_frame_id_, p_reference_frame_id_, now, ros::Duration(0.05));
+    tf_ls_.lookupTransform(p_robot_frame_id_, p_reference_frame_id_, now, pose_tf);
+  }
+  catch (tf::TransformException ex) { pose_tf.setIdentity(); }
+
+  pose_.x = pose_tf.getOrigin().x();
+  pose_.y = pose_tf.getOrigin().y();
+  pose_.theta = tf::getYaw(pose_tf.getRotation());
+
+
   double dt = 1.0 / p_loop_rate_; // (e.current_real - e.last_real).toSec();
   t_ += dt;
 
   computeControls();
-}
-
-void UrakuboController::odomCallback(const nav_msgs::Odometry::ConstPtr odom_msg) {
-  pose_.x = odom_msg->pose.pose.position.x;
-  pose_.y = odom_msg->pose.pose.position.y;
-  pose_.theta = tf::getYaw(odom_msg->pose.pose.orientation);
 }
 
 void UrakuboController::obstaclesCallback(const obstacle_detector::Obstacles::ConstPtr obstacles_msg) {
@@ -151,9 +186,6 @@ void UrakuboController::obstaclesCallback(const obstacle_detector::Obstacles::Co
 
 void UrakuboController::computeControls() {
   geometry_msgs::TwistPtr controls_msg(new geometry_msgs::Twist);
-  std_msgs::Float64Ptr potential_msg(new std_msgs::Float64);
-  std_msgs::Float64Ptr grad_norm_msg(new std_msgs::Float64);
-  std_msgs::Float64Ptr is_saddle_msg(new std_msgs::Float64);
 
   double b, h, g;               // Variable parameters
 
@@ -197,9 +229,6 @@ void UrakuboController::computeControls() {
   // Recalculate gradient of navigation function
   graadV = gradV();
 
-  potential_msg->data = V();
-  grad_norm_msg->data = norm(graadV);
-
   // Recalculate parameter b
   g = norm(trans(B) * graadV);
   h = pow(g, 2.0) + p_epsilon_ * sqrt(g);
@@ -213,10 +242,8 @@ void UrakuboController::computeControls() {
   vec eigen_vals = vec(3).zeros();
   vec min_eigen_vec = vec(3).zeros();
 
-  if (detectSaddle(min_eigen_vec, eigen_vals)) {
+  if (detectSaddle(min_eigen_vec, eigen_vals))
     u = saddleAvoidance(min_eigen_vec, eigen_vals);
-    is_saddle_msg->data = 1.0;
-  }
   else {
 //   if (p_normalize_gradient_ && norm(graadV) > p_min_normalizing_gradient_ && V() > p_min_normalizing_potential_)
 //      graadV /= norm(graadV);
@@ -228,8 +255,6 @@ void UrakuboController::computeControls() {
       //u = -(p_a_ * I + b * J) * trans(B) * graadV * (norm(pose) + p_epsilon_e_) / (norm(trans(B) * graadV) + p_epsilon_d_);
     else
       u = -(p_a_ * I + b * J) * trans(B) * graadV;
-
-    is_saddle_msg->data = 0.0;
   }
 
   // Scale the control signals
@@ -254,9 +279,6 @@ void UrakuboController::computeControls() {
   controls_msg->angular.z = u(1);
 
   controls_pub_.publish(controls_msg);
-//  potential_pub_.publish(potential_msg);
-//  grad_norm_pub_.publish(grad_norm_msg);
-//  is_saddle_pub_.publish(is_saddle_msg);
 }
 
 vec UrakuboController::saddleAvoidance(const vec min_eigen_vec, const vec eigen_vals) {

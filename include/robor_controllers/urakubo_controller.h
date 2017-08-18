@@ -39,9 +39,8 @@
 
 #include <ros/ros.h>
 #include <tf/tf.h>
+#include <tf/transform_listener.h>
 #include <std_srvs/Empty.h>
-#include <std_msgs/Float64.h>
-#include <nav_msgs/Odometry.h>
 #include <geometry_msgs/Pose2D.h>
 #include <geometry_msgs/Twist.h>
 #include <obstacle_detector/Obstacles.h>
@@ -58,11 +57,11 @@ class UrakuboController
 {
 public:
   UrakuboController(ros::NodeHandle& nh, ros::NodeHandle& nh_local);
+  ~UrakuboController();
 
 private:
   bool updateParams(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
   void timerCallback(const ros::TimerEvent& e);
-  void odomCallback(const nav_msgs::Odometry::ConstPtr odom_msg);
   void obstaclesCallback(const obstacle_detector::Obstacles::ConstPtr obstacles_msg);
 
   void initialize() { std_srvs::Empty empt; updateParams(empt.request, empt.response); }
@@ -98,15 +97,14 @@ private:
   ros::NodeHandle nh_local_;
 
   ros::ServiceServer params_srv_;
+
   ros::Timer timer_;
 
-  ros::Subscriber odom_sub_;
   ros::Subscriber obstacles_sub_;
 
+  tf::TransformListener tf_ls_;
+
   ros::Publisher controls_pub_;
-  ros::Publisher potential_pub_;
-  ros::Publisher grad_norm_pub_;
-  ros::Publisher is_saddle_pub_;
 
   geometry_msgs::Pose2D pose_;
   std::vector<Ubstacle> obstacles_;
@@ -144,6 +142,9 @@ private:
   double p_max_w_;
 
   Ubstacle p_world_obstacle_;
+
+  std::string p_robot_frame_id_;
+  std::string p_reference_frame_id_;
 };
 
 } // namespace robor_controllers
