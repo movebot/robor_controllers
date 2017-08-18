@@ -157,14 +157,16 @@ void UrakuboController::timerCallback(const ros::TimerEvent& e) {
 
   tf::StampedTransform pose_tf;
   try {
-    tf_ls_.waitForTransform(p_robot_frame_id_, p_reference_frame_id_, now, ros::Duration(0.05));
-    tf_ls_.lookupTransform(p_robot_frame_id_, p_reference_frame_id_, now, pose_tf);
+    tf_ls_.waitForTransform(p_reference_frame_id_, p_robot_frame_id_, now, ros::Duration(0.05));
+    tf_ls_.lookupTransform(p_reference_frame_id_, p_robot_frame_id_, now, pose_tf);
   }
-  catch (tf::TransformException ex) { pose_tf.setIdentity(); }
+  catch (tf::TransformException ex) { pose_tf.setIdentity(); std::cout << "ERROR" << std::endl; }
 
   pose_.x = pose_tf.getOrigin().x();
   pose_.y = pose_tf.getOrigin().y();
   pose_.theta = tf::getYaw(pose_tf.getRotation());
+
+
 
   double dt = 1.0 / p_loop_rate_; // (e.current_real - e.last_real).toSec();
   t_ += dt;
@@ -255,9 +257,9 @@ void UrakuboController::computeControls() {
   double v_x, v_y, w;
   vec graadV2 = { graadV(0), graadV(1) };
 
-  if (p_normalize_gradient_)
-    u = -graadV2 * (norm(pose) + p_epsilon_n_) / (pow(norm(graadV2), 2.0 + p_epsilon_p_) + p_epsilon_d_);
-  else
+//  if (p_normalize_gradient_)
+//    u = -graadV2 * (norm(pose) + p_epsilon_n_) / (pow(norm(graadV2), 1.1 + p_epsilon_p_) + p_epsilon_d_);
+//  else
     u = -graadV2;
 
   v_x = u(0);
