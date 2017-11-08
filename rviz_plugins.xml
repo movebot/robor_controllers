@@ -16,14 +16,6 @@
     </description>
   </class>
 
-  <class name="Urakubo Controller"
-         type="robor_controllers::UrakuboControllerPanel"
-         base_class_type="rviz::Panel">
-    <description>
-      Urakubo Controller Panel
-    </description>
-  </class>
-
   <class name="Potentials Controller"
          type="robor_controllers::PotentialsControllerPanel"
          base_class_type="rviz::Panel">

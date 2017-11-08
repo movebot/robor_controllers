@@ -60,32 +60,5 @@
     <param name="reference_frame_id" value="reference"/>
   </node>
 
-  <node name="urakubo_controller" pkg="nodelet" type="nodelet" args="load robor_controllers/UrakuboController $(arg manager)">
-    <param name="active"       value="false"/>
-    <param name="run"          value="false"/>
-
-    <param name="normalize_gradient" value="true"/>
-
-    <param name="loop_rate"    value="100.0"/>
-
-    <param name="a"            value="0.5"/>
-    <param name="b_"           value="2.5"/>
-    <param name="k_w"          value="0.1"/>
-    <param name="epsilon"      value="0.0001"/>
-    <param name="kappa"        value="3.0"/>
-
-    <param name="min_saddle_gradient"       value="0.05"/>
-    <param name="min_normalizing_potential" value="0.07"/>
-    <param name="min_normalizing_gradient"  value="0.05"/>
-
-    <param name="world_x"      value="0.0"/>
-    <param name="world_y"      value="0.0"/>
-    <param name="world_radius" value="3.0"/>
-
-    <param name="max_u"        value="0.4"/>
-    <param name="max_v"        value="0.4"/>
-    <param name="max_w"        value="2.7"/>
-  </node>
-
 </launch>
 <!-- -->

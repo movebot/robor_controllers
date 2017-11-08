@@ -16,14 +16,6 @@
     </description>
   </class>
 
-  <class name="robor_controllers/UrakuboController"
-         type="robor_controllers::UrakuboControllerNodelet"
-         base_class_type="nodelet::Nodelet">
-    <description>
-      Urakubo Controller Nodelet
-    </description>
-  </class>
-
   <class name="robor_controllers/PotentialsController"
          type="robor_controllers::PotentialsControllerNodelet"
          base_class_type="nodelet::Nodelet">
